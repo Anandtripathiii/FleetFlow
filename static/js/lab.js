@@ -1,8 +1,17 @@
 /* Simulation lab: plays back rules vs RL side by side on two canvases. */
 (() => {
   const TRAVEL = 40;
-  const ZC = { A: ['#E3F1E6', '#2F6B4B'], B: ['#E4EFF2', '#2F6F82'], C: ['#F3EEDF', '#8A6A1F'], D: ['#EFEAF5', '#5E4E80'] };
-  const ROBOT = { 0: '#4E9A6B', 1: '#2F6F82', 2: '#C9862E', 3: '#D49A3A', 4: '#B44B36' };
+  // colours come from the CSS tokens so the floor follows the light/dark theme
+  const ZONE_TOKEN = { A: '--ok', B: '--info', C: '--warn', D: '--plum' };
+  let P = {};
+  function palette() {
+    const zc = {};
+    for (const [z, t] of Object.entries(ZONE_TOKEN)) zc[z] = [cssColor(t, .08), cssColor(t)];
+    P = { zc, ink: cssColor('--ink'), muted: cssColor('--muted'), bg: cssColor('--bg'), line: cssColor('--line'),
+      warn: cssColor('--warn'), warnBg: cssColor('--warn', .12), warnLine: cssColor('--warn', .5), bad: cssColor('--bad'),
+      ok: cssColor('--ok'), queue: cssColor('--muted', .45), track: cssColor('--ink', .12),
+      robot: { 0: cssColor('--ok'), 1: cssColor('--info'), 2: cssColor('--warn'), 3: cssColor('--warn'), 4: cssColor('--bad') } };
+  }
   const $ = id => document.getElementById(id);
   let data = null, frame = 0, playing = false, last = 0, acc = 0, chart = null;
   const prevZone = { rules: [], rl: [] };
@@ -26,26 +35,26 @@
     const g = ctx(side);
     g.clearRect(0, 0, W, H);
     zones.forEach((code, z) => {
-      const [x, y, w, h] = RECT[z], [bg, fg] = ZC[code];
+      const [x, y, w, h] = RECT[z], [bg, fg] = P.zc[code];
       const q = snap.queues[z], hot = q > 25;
-      g.fillStyle = hot ? '#FFF3E2' : bg; roundRect(g, x, y, w, h, 12); g.fill();
-      g.strokeStyle = hot ? '#E5BF86' : 'rgba(0,0,0,.06)'; g.lineWidth = 1.5; g.stroke();
+      g.fillStyle = hot ? P.warnBg : bg; roundRect(g, x, y, w, h, 0); g.fill();
+      g.strokeStyle = hot ? P.warnLine : P.line; g.lineWidth = 1; g.stroke();
       g.fillStyle = fg; g.font = '700 17px Figtree, system-ui'; g.fillText('Zone ' + code, x + 14, y + 26);
-      g.font = '500 12.5px Figtree, system-ui'; g.fillStyle = '#5D6B61';
+      g.font = '500 12.5px Figtree, system-ui'; g.fillStyle = P.muted;
       g.fillText(names[code] + ' · ' + snap.rate[z].toFixed(0) + ' orders/min', x + 14, y + 45);
       if (snap.signal[z] > 1.05) {
-        g.fillStyle = '#FCF2DF'; roundRect(g, x + w - 82, y + 10, 70, 22, 11); g.fill();
-        g.fillStyle = '#B97A1C'; g.font = '700 12px Figtree'; g.textAlign = 'center';
+        g.fillStyle = P.warnBg; roundRect(g, x + w - 82, y + 10, 70, 22, 2); g.fill();
+        g.fillStyle = P.warn; g.font = '700 12px Figtree'; g.textAlign = 'center';
         g.fillText('web x' + snap.signal[z].toFixed(1), x + w - 47, y + 25); g.textAlign = 'left';
       }
-      g.textAlign = 'right'; g.font = '700 15px Figtree'; g.fillStyle = hot ? '#B44B36' : '#1E2B22';
+      g.textAlign = 'right'; g.font = '700 15px Figtree'; g.fillStyle = hot ? P.bad : P.ink;
       g.fillText(q + ' waiting', x + w - 14, y + (snap.signal[z] > 1.05 ? 52 : 28)); g.textAlign = 'left';
       const shown = Math.min(q, 30);
       for (let i = 0; i < shown; i++) {
         const cx = x + w - 24 - (i % 5) * 12, cy = y + h - 22 - Math.floor(i / 5) * 12;
-        g.fillStyle = hot ? '#D9883A' : '#9CCAA8'; roundRect(g, cx, cy, 9, 9, 2); g.fill();
+        g.fillStyle = hot ? P.warn : P.queue; roundRect(g, cx, cy, 9, 9, 1); g.fill();
       }
-      if (q > 30) { g.fillStyle = '#B44B36'; g.font = '700 11px Figtree'; g.textAlign = 'right'; g.fillText('+' + (q - 30), x + w - 14, y + h - 98); g.textAlign = 'left'; }
+      if (q > 30) { g.fillStyle = P.bad; g.font = '700 11px Figtree'; g.textAlign = 'right'; g.fillText('+' + (q - 30), x + w - 14, y + h - 98); g.textAlign = 'left'; }
     });
     const count = [0, 0, 0, 0];
     snap.zone.forEach((z, i) => {
@@ -56,19 +65,19 @@
         const p = Math.max(0, Math.min(1, 1 - snap.timer[i] / TRAVEL));
         const [ax, ay] = center(from), [bx, by] = center(z);
         px = ax + (bx - ax) * p; py = ay + (by - ay) * p;
-        g.setLineDash([4, 5]); g.strokeStyle = '#C9862E'; g.lineWidth = 1.5;
+        g.setLineDash([4, 5]); g.strokeStyle = P.warn; g.lineWidth = 1.5;
         g.beginPath(); g.moveTo(ax, ay); g.lineTo(bx, by); g.stroke(); g.setLineDash([]);
       } else {
         [px, py] = slot(z, count[z]++);
         prevZone[side][i] = z;
       }
       g.beginPath(); g.arc(px, py, 14, 0, Math.PI * 2);
-      g.fillStyle = ROBOT[st]; g.fill(); g.lineWidth = 2; g.strokeStyle = '#fff'; g.stroke();
-      g.fillStyle = '#fff'; g.font = '700 11px Figtree'; g.textAlign = 'center';
+      g.fillStyle = P.robot[st]; g.fill(); g.lineWidth = 2; g.strokeStyle = P.bg; g.stroke();
+      g.fillStyle = P.bg; g.font = '700 11px Figtree'; g.textAlign = 'center';
       g.fillText(st === 4 ? '×' : 'R' + (i + 1), px, py + 4); g.textAlign = 'left';
       const b = snap.battery[i] / 100;
-      g.fillStyle = 'rgba(0,0,0,.10)'; g.fillRect(px - 12, py + 18, 24, 3);
-      g.fillStyle = b < .25 ? '#B44B36' : '#4E9A6B'; g.fillRect(px - 12, py + 18, 24 * b, 3);
+      g.fillStyle = P.track; g.fillRect(px - 12, py + 18, 24, 3);
+      g.fillStyle = b < .25 ? P.bad : P.ok; g.fillRect(px - 12, py + 18, 24 * b, 3);
     });
   }
 
@@ -123,14 +132,14 @@
     if (chart) chart.destroy();
     chart = new Chart($('chart'), {
       data: { labels, datasets: [
-        { type: 'line', label: 'Rules', data: H.map(s => s.avg_wait), borderColor: '#C9A36A', borderWidth: 2.5, pointRadius: 0, tension: .25 },
-        { type: 'line', label: 'RL agent', data: data.rl.history.map(s => s.avg_wait), borderColor: '#2F6B4B', borderWidth: 2.5, pointRadius: 0, tension: .25 },
-        { type: 'bar', label: 'Demand', data: demand, backgroundColor: '#EFE5F3', yAxisID: 'y2', barPercentage: 1, categoryPercentage: 1 },
+        { type: 'line', label: 'Rules', data: H.map(s => s.avg_wait), borderColor: P.muted, borderWidth: 2.5, pointRadius: 0, tension: .25 },
+        { type: 'line', label: 'RL agent', data: data.rl.history.map(s => s.avg_wait), borderColor: cssColor('--accent'), borderWidth: 2.5, pointRadius: 0, tension: .25 },
+        { type: 'bar', label: 'Demand', data: demand, backgroundColor: cssColor('--chart-2', .6), yAxisID: 'y2', barPercentage: 1, categoryPercentage: 1 },
       ] },
       options: { maintainAspectRatio: false, animation: false, interaction: { mode: 'index', intersect: false },
         plugins: { legend: { display: false }, tooltip: { filter: i => i.datasetIndex < 3 } },
         scales: { x: { grid: { display: false }, ticks: { maxTicksLimit: 10 } },
-          y: { title: { display: true, text: 'avg wait (s)' }, grid: { color: '#EEF2EC' }, beginAtZero: true },
+          y: { title: { display: true, text: 'avg wait (s)' }, grid: { color: cssColor('--chart-grid') }, beginAtZero: true },
           y2: { position: 'right', grid: { display: false }, beginAtZero: true, title: { display: true, text: 'orders/min' } } } }
     });
   }
@@ -175,6 +184,7 @@
     if (playing) { last = performance.now(); requestAnimationFrame(tick); }
   };
   $('scrub').oninput = e => { if (!data) return; frame = +e.target.value; playing = false; $('play').textContent = 'Play'; render(); };
-  Chart.defaults.font.family = 'Figtree, system-ui, sans-serif'; Chart.defaults.color = '#7A887E';
+  Chart.defaults.font.family = 'Figtree, system-ui, sans-serif';
+  onTheme(() => { palette(); Chart.defaults.color = P.muted; if (data) { buildChart(); render(); } });
   run();
 })();

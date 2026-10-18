@@ -14,7 +14,7 @@
 
 <div class="grid g4">
   <div class="card kpi"><div class="label">Products tracked</div><div class="value">{{ sm['items'] }}</div><div class="sub">in this shop</div></div>
-  <div class="card kpi"><span class="kpi-ico {{ 'warn' if sm.low }}">{{ icon('alert',16) }}</span><div class="label">Below minimum</div><div class="value" style="{{ 'color:var(--amber)' if sm.low }}">{{ sm.low }}</div><div class="sub">{{ sm.empty }} completely empty</div></div>
+  <div class="card kpi"><span class="kpi-ico {{ 'warn' if sm.low }}">{{ icon('alert',16) }}</span><div class="label">Below minimum</div><div class="value" style="{{ 'color:var(--warn)' if sm.low }}">{{ sm.low }}</div><div class="sub">{{ sm.empty }} completely empty</div></div>
   <div class="card kpi"><div class="label">Units on the way</div><div class="value">{{ sm.on_way }}</div><div class="sub">open transfers to this shop</div></div>
   <div class="card kpi"><div class="label">Sold · last 7 days</div><div class="value">{{ sales7|num }}</div><div class="sub">recorded counter sales</div></div>
 </div>

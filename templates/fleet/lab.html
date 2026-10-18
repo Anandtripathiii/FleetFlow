@@ -20,7 +20,7 @@
     <div style="align-self:flex-end;display:flex;align-items:center;gap:8px"><span class="lbl">Speed</span><input type="range" id="speed" min="1" max="12" value="4"></div>
     <div style="margin-left:auto;align-self:flex-end;text-align:right"><div class="lbl">Warehouse clock</div><b id="clock" style="font-size:20px;font-variant-numeric:tabular-nums">00:00</b><span class="muted" id="phase" style="display:block;font-size:12px"></span></div>
   </div>
-  <div style="padding:0 18px 14px"><input type="range" id="scrub" min="0" max="0" value="0" style="width:100%;accent-color:var(--g700)"></div>
+  <div style="padding:0 18px 14px"><input type="range" id="scrub" min="0" max="0" value="0" style="width:100%;accent-color:var(--accent)"></div>
 </div>
 
 <div class="sim-pair" style="margin-top:16px">
@@ -41,7 +41,7 @@
 
 <div class="grid g-2-1" style="margin-top:16px">
   <div class="card">
-    <div class="card-h"><h2>Average wait over time</h2><div class="legend"><span><i style="background:#C9A36A"></i>Rules</span><span><i style="background:#2F6B4B"></i>RL agent</span><span><i style="background:#E7D6EE"></i>Demand (orders/min)</span></div></div>
+    <div class="card-h"><h2>Average wait over time</h2><div class="legend"><span><i style="background:var(--muted)"></i>Rules</span><span><i style="background:var(--accent)"></i>RL agent</span><span><i style="background:var(--chart-2)"></i>Demand (orders/min)</span></div></div>
     <div class="card-b"><div class="chart-box" style="height:260px"><canvas id="chart"></canvas></div></div>
   </div>
   <div class="card">

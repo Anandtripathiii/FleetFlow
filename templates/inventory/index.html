@@ -38,7 +38,7 @@
       <td><a href="{{ url_for('inventory.detail', pid=p.id) }}"><b>{{ p.name }}</b></a><span class="sub mono">{{ p.sku }}</span></td>
       <td>{{ p.category }}</td>
       <td>{{ zone(p.zone) }} <span class="mono muted">{{ p.bin }}</span></td>
-      <td class="num"><b>{{ p.qty|num }}</b> <span class="muted">{{ p.unit }}</span>{% if p.qty == 0 %}<span class="sub" style="color:var(--clay)">out of stock</span>{% elif p.qty <= p.reorder_level %}<span class="sub" style="color:var(--amber)">reorder at {{ p.reorder_level }}</span>{% endif %}</td>
+      <td class="num"><b>{{ p.qty|num }}</b> <span class="muted">{{ p.unit }}</span>{% if p.qty == 0 %}<span class="sub" style="color:var(--bad)">out of stock</span>{% elif p.qty <= p.reorder_level %}<span class="sub" style="color:var(--warn)">reorder at {{ p.reorder_level }}</span>{% endif %}</td>
       <td>{{ stockbar(p.qty, p.reorder_level) }}</td>
       <td class="num">{{ p.in_shops|num }}</td>
       <td class="num">{{ p.unit_cost|inr }}</td>

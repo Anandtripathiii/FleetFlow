@@ -44,9 +44,14 @@
 {% block scripts %}
 <script src="{{ url_for('static', filename='vendor/chart.umd.js') }}"></script>
 <script>
-Chart.defaults.font.family='Figtree, system-ui, sans-serif'; Chart.defaults.color='#7A887E';
+Chart.defaults.font.family='Figtree, system-ui, sans-serif';
 const rb={{ robots|map('list')|list|tojson }};
-new Chart(document.getElementById('rb'),{type:'bar',data:{labels:rb.map(r=>r[0]),datasets:[{data:rb.map(r=>r[1]),backgroundColor:'#4E9A6B',borderRadius:5,maxBarThickness:34}]},
- options:{maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false}},y:{grid:{color:'#EEF2EC'},title:{display:true,text:'jobs done'}}}}});
+let rbChart=null;
+onTheme(()=>{
+ if(rbChart) rbChart.destroy();
+ Chart.defaults.color=cssColor('--muted');
+ rbChart=new Chart(document.getElementById('rb'),{type:'bar',data:{labels:rb.map(r=>r[0]),datasets:[{data:rb.map(r=>r[1]),backgroundColor:cssColor('--chart-1'),borderRadius:0,maxBarThickness:34}]},
+  options:{maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false}},y:{grid:{color:cssColor('--chart-grid')},border:{display:false},title:{display:true,text:'jobs done'}}}}});
+});
 </script>
 {% endblock %}

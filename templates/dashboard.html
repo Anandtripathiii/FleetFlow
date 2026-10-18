@@ -30,7 +30,7 @@
     <span class="kpi-ico {{ 'bad' if k.urgent }}">{{ icon('truck',16) }}</span>
     <div class="label">Open transfers</div>
     <div class="value">{{ k.open_tr }}</div>
-    <div class="sub">{% if k.urgent %}<span style="color:var(--clay);font-weight:600">{{ k.urgent }} urgent</span> · {% endif %}avg delivery {{ k.lead_h }} h</div>
+    <div class="sub">{% if k.urgent %}<span style="color:var(--bad);font-weight:600">{{ k.urgent }} urgent</span> · {% endif %}avg delivery {{ k.lead_h }} h</div>
   </a>
   <a class="card kpi" href="{{ url_for('fleet.index') }}" style="color:inherit;text-decoration:none">
     <span class="kpi-ico">{{ icon('robot',16) }}</span>
@@ -43,7 +43,7 @@
 <div class="grid g-2-1" style="margin-top:16px">
   <div class="card">
     <div class="card-h"><h2>Stock in and out · last 14 days</h2>
-      <div class="legend"><span><i style="background:#4E9A6B"></i>Sent to shops</span><span><i style="background:#CFE6D3"></i>Received</span></div></div>
+      <div class="legend"><span><i style="background:var(--chart-1)"></i>Sent to shops</span><span><i style="background:var(--chart-2)"></i>Received</span></div></div>
     <div class="card-b"><div class="chart-box"><canvas id="flow"></canvas></div></div>
   </div>
   <div class="card">
@@ -108,16 +108,23 @@
 {% block scripts %}
 <script src="{{ url_for('static', filename='vendor/chart.umd.js') }}"></script>
 <script>
-Chart.defaults.font.family = 'Figtree, system-ui, sans-serif'; Chart.defaults.color = '#7A887E';
+Chart.defaults.font.family = 'Figtree, system-ui, sans-serif';
 const flow = {{ flow|tojson }};
-new Chart(document.getElementById('flow'), {type:'bar', data:{labels:flow.labels, datasets:[
-  {label:'Sent to shops', data:flow.out, backgroundColor:'#4E9A6B', borderRadius:4, maxBarThickness:22},
-  {label:'Received', data:flow.in, backgroundColor:'#CFE6D3', borderRadius:4, maxBarThickness:22}]},
-  options:{maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{x:{grid:{display:false}}, y:{grid:{color:'#EEF2EC'}, beginAtZero:true}}}});
 const cats = {{ by_cat|map('list')|list|tojson }};
-new Chart(document.getElementById('cats'), {type:'bar', data:{labels:cats.map(c=>c[0]), datasets:[{data:cats.map(c=>Math.round(c[1])),
-  backgroundColor:['#2F6B4B','#3B7F59','#4E9A6B','#6FB085','#9CCAA8','#BCDDC4','#CFE6D3','#E0EEE2'], borderRadius:5}]},
-  options:{indexAxis:'y', maintainAspectRatio:false, plugins:{legend:{display:false}, tooltip:{callbacks:{label:c=>'₹'+c.raw.toLocaleString('en-IN')}}},
-  scales:{x:{grid:{color:'#EEF2EC'}, ticks:{callback:v=>'₹'+(v>=1000?(v/1000)+'k':v)}}, y:{grid:{display:false}}}}});
+let charts = [];
+onTheme(() => {
+  charts.forEach(c => c.destroy());
+  Chart.defaults.color = cssColor('--muted');
+  const grid = cssColor('--chart-grid'), ink = cssColor('--chart-1');
+  charts = [
+    new Chart(document.getElementById('flow'), {type:'bar', data:{labels:flow.labels, datasets:[
+      {label:'Sent to shops', data:flow.out, backgroundColor:ink, borderRadius:0, maxBarThickness:22},
+      {label:'Received', data:flow.in, backgroundColor:cssColor('--chart-2'), borderRadius:0, maxBarThickness:22}]},
+      options:{maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{x:{grid:{display:false}}, y:{grid:{color:grid}, border:{display:false}, beginAtZero:true}}}}),
+    new Chart(document.getElementById('cats'), {type:'bar', data:{labels:cats.map(c=>c[0]), datasets:[{data:cats.map(c=>Math.round(c[1])),
+      backgroundColor:cats.map((c, i) => cssColor('--chart-1', Math.max(.22, 1 - i * .11))), borderRadius:0}]},
+      options:{indexAxis:'y', maintainAspectRatio:false, plugins:{legend:{display:false}, tooltip:{callbacks:{label:c=>'₹'+c.raw.toLocaleString('en-IN')}}},
+      scales:{x:{grid:{color:grid}, border:{display:false}, ticks:{callback:v=>'₹'+(v>=1000?(v/1000)+'k':v)}}, y:{grid:{display:false}}}}})];
+});
 </script>
 {% endblock %}

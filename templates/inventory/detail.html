@@ -18,7 +18,7 @@
 <div class="grid g4">
   <div class="card kpi {{ 'accent' if p.qty > p.reorder_level }}"><div class="label">In warehouse</div><div class="value">{{ p.qty|num }} <span style="font-size:14px;font-weight:500">{{ p.unit }}</span></div><div class="sub">reorder at {{ p.reorder_level }}</div></div>
   <div class="card kpi"><div class="label">Sent out · last 30 days</div><div class="value">{{ out30|num }}</div><div class="sub">about {{ '%.1f'|format(per_day) }} per day</div></div>
-  <div class="card kpi"><div class="label">Days of cover</div><div class="value" style="{{ 'color:var(--clay)' if cover is not none and cover < 7 }}">{{ '%.0f'|format(cover) if cover is not none else '—' }}</div><div class="sub">{% if cover is not none and p.lead_days %}supplier needs {{ p.lead_days }} days{% else %}at the current pace{% endif %}</div></div>
+  <div class="card kpi"><div class="label">Days of cover</div><div class="value" style="{{ 'color:var(--bad)' if cover is not none and cover < 7 }}">{{ '%.0f'|format(cover) if cover is not none else '—' }}</div><div class="sub">{% if cover is not none and p.lead_days %}supplier needs {{ p.lead_days }} days{% else %}at the current pace{% endif %}</div></div>
   <div class="card kpi"><div class="label">Stock value</div><div class="value">{{ (p.qty * p.unit_cost)|inr }}</div><div class="sub">cost {{ p.unit_cost|inr(2) }} · sells at {{ p.unit_price|inr(2) }}</div></div>
 </div>
 
@@ -39,7 +39,7 @@
       <tr><td style="white-space:nowrap">{{ m.created_at|when }}</td>
           <td>{{ 'Warehouse' if m.location == 'warehouse' else m.location }}</td>
           <td>{{ m.reason|capitalize }}{% if m.ref %}<span class="sub">{{ m.ref }}</span>{% endif %}</td>
-          <td class="num" style="color:{{ 'var(--g700)' if m.change > 0 else 'var(--clay)' }};font-weight:600">{{ '%+d'|format(m.change) }}</td>
+          <td class="num" style="color:{{ 'var(--ok)' if m.change > 0 else 'var(--bad)' }};font-weight:600">{{ '%+d'|format(m.change) }}</td>
           <td class="num">{{ m.balance if m.balance is not none else '—' }}</td>
           <td class="muted" style="font-size:13px">{{ m.user or '—' }}</td></tr>
       {% else %}<tr><td colspan="6" class="empty">No movements yet.</td></tr>{% endfor %}

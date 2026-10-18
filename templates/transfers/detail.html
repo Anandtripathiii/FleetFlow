@@ -38,7 +38,7 @@
         <td><a href="{{ url_for('inventory.detail', pid=i.product_id) }}">{{ i.name }}</a><span class="sub mono">{{ i.sku }}</span></td>
         <td>{{ zone(i.zone) }} <span class="mono muted">{{ i.bin }}</span></td>
         <td class="num"><b>{{ i.qty }}</b> {{ i.unit }}</td>
-        <td class="num">{{ have }}{% if have < i.qty and t.status in ('pending','picking') %}<span class="sub" style="color:var(--clay)">short by {{ i.qty - have }}</span>{% endif %}</td>
+        <td class="num">{{ have }}{% if have < i.qty and t.status in ('pending','picking') %}<span class="sub" style="color:var(--bad)">short by {{ i.qty - have }}</span>{% endif %}</td>
       </tr>{% endfor %}</tbody></table></div>
   </div>
   <div class="card"><div class="card-b">

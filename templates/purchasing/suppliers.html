@@ -11,7 +11,7 @@
     <tr><td><b>{{ s.name }}</b>{% if s.website %}<span class="sub"><a href="{{ s.website }}" target="_blank" rel="noopener">{{ s.website[:40] }}</a></span>{% endif %}</td>
       <td>{{ s.contact or '—' }}<span class="sub">{{ s.phone or '' }} {{ s.email or '' }}</span></td>
       <td class="num">{{ s.products }}</td><td class="num">{{ s.pos }}</td><td class="num">{{ s.lead_days }} d</td>
-      <td class="num">{% if s.real_lead %}<span style="{{ 'color:var(--clay);font-weight:600' if s.real_lead > s.lead_days + 0.5 }}">{{ '%.1f'|format(s.real_lead) }} d</span>{% else %}—{% endif %}</td>
+      <td class="num">{% if s.real_lead %}<span style="{{ 'color:var(--bad);font-weight:600' if s.real_lead > s.lead_days + 0.5 }}">{{ '%.1f'|format(s.real_lead) }} d</span>{% else %}—{% endif %}</td>
       <td style="white-space:nowrap;text-align:right">{% if current_user.can('manager') %}<a class="btn sm" href="{{ url_for('purchasing.suppliers', edit=s.id) }}">Edit</a>{% endif %}
         <a class="btn sm" href="{{ url_for('purchasing.new', supplier=s.id) }}">Order</a></td></tr>
     {% endfor %}</tbody></table></div></div>

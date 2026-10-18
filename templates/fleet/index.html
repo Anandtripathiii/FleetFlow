@@ -12,7 +12,7 @@
 
 <div class="grid g-2-1">
   <div class="card">
-    <div class="card-h"><h2>Warehouse floor · live</h2><div class="legend"><span><i style="background:var(--g500)"></i>Idle</span><span><i style="background:var(--sky)"></i>Picking</span><span><i style="background:#D49A3A"></i>Charging</span><span><i style="background:var(--clay)"></i>Maintenance</span></div></div>
+    <div class="card-h"><h2>Warehouse floor · live</h2><div class="legend"><span><i style="background:var(--ok)"></i>Idle</span><span><i style="background:var(--info)"></i>Picking</span><span><i style="background:var(--warn)"></i>Charging</span><span><i style="background:var(--bad)"></i>Maintenance</span></div></div>
     <div class="card-b"><div class="floor">
       {% for z in pr.zones %}{% set c = z.code %}
       {% set per = (pr.queue[c] / pr.robots[c]) if pr.robots[c] else pr.queue[c] %}
@@ -31,7 +31,7 @@
       <div class="lbl" style="margin-bottom:8px">Digital twin · next {{ fc.horizon_min }} minutes · average wait</div>
       <div class="sim-metrics" style="grid-template-columns:repeat(3,1fr);margin:0">
         <div><b>{{ fc.base }} s</b><span>robots stay put</span></div>
-        <div style="{{ 'background:var(--g50);border-color:var(--g200)' if moves }}"><b class="{{ 'win' if moves }}">{{ fc.plan }} s</b><span>with the moves below</span></div>
+        <div style="{{ 'background:var(--ok-bg);border-color:color-mix(in oklab,var(--ok) 35%,var(--line))' if moves }}"><b class="{{ 'win' if moves }}">{{ fc.plan }} s</b><span>with the moves below</span></div>
         <div><b class="{{ 'win' if fc.rl is not none and fc.rl < fc.base else '' }}">{{ fc.rl if fc.rl is not none else '–' }} s</b><span>RL agent drives</span></div>
       </div>
       {% if moves %}<p style="margin:10px 0 0;font-size:13px"><b class="win">−{{ fc.gain }}% waiting time</b> predicted if you apply {{ 'this move' if moves|length == 1 else 'these ' ~ moves|length ~ ' moves' }}.</p>{% endif %}
@@ -39,7 +39,7 @@
     {% if moves %}
       {% for m in moves %}
       <label class="move-card">
-        <input type="checkbox" name="move" value="{{ loop.index0 }}" checked style="margin-top:4px;accent-color:var(--g700)" {{ 'disabled' if not current_user.can('manager') }}>
+        <input type="checkbox" name="move" value="{{ loop.index0 }}" checked style="margin-top:4px;accent-color:var(--accent)" {{ 'disabled' if not current_user.can('manager') }}>
         <div><div class="move-arrow">{{ m.robot }} &nbsp;{{ zone(m['from']) }} {{ icon('arrow',16) }} {{ zone(m.to) }}<span class="muted" style="font-weight:500;font-size:12.5px">· {{ m.battery|int }}% battery</span></div>
         <div class="muted" style="font-size:13px;margin-top:3px">{{ m.why }}</div></div>
       </label>{% endfor %}

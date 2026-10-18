@@ -10,7 +10,7 @@
 <div class="grid g4">
   {% for z in zones %}{% set m = effect[z.code] %}
   <div class="card kpi"><div class="label">{{ zone(z.code) }} {{ z.name.split('·')[-1] }}</div>
-    <div class="value" style="{{ 'color:var(--amber)' if m >= 2 else ('color:var(--g700)' if m > 1.05 else '') }}">x{{ '%.1f'|format(m) }}</div>
+    <div class="value" style="{{ 'color:var(--warn)' if m >= 2 else ('color:var(--ok)' if m > 1.05 else '') }}">x{{ '%.1f'|format(m) }}</div>
     <div class="sub">{{ 'expected demand vs normal' if m > 1.05 else 'normal demand' }}</div></div>
   {% endfor %}
 </div>
