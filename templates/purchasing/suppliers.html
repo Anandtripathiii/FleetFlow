@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon %}
+{% block title %}Suppliers{% endblock %}
+{% block content %}
+<div class="page-head"><div><div class="crumb"><a href="{{ url_for('purchasing.index') }}">Purchasing</a> /</div><h1>Suppliers</h1>
+<p>Who you buy from, how to reach them, and how long they really take to deliver.</p></div></div>
+<div class="grid g-2-1">
+  <div class="card"><div class="table-wrap"><table>
+    <thead><tr><th>Supplier</th><th>Contact</th><th class="num">Products</th><th class="num">Orders</th><th class="num">Promised lead</th><th class="num">Actual lead</th><th></th></tr></thead>
+    <tbody>{% for s in rows %}
+    <tr><td><b>{{ s.name }}</b>{% if s.website %}<span class="sub"><a href="{{ s.website }}" target="_blank" rel="noopener">{{ s.website[:40] }}</a></span>{% endif %}</td>
+      <td>{{ s.contact or '—' }}<span class="sub">{{ s.phone or '' }} {{ s.email or '' }}</span></td>
+      <td class="num">{{ s.products }}</td><td class="num">{{ s.pos }}</td><td class="num">{{ s.lead_days }} d</td>
+      <td class="num">{% if s.real_lead %}<span style="{{ 'color:var(--clay);font-weight:600' if s.real_lead > s.lead_days + 0.5 }}">{{ '%.1f'|format(s.real_lead) }} d</span>{% else %}—{% endif %}</td>
+      <td style="white-space:nowrap;text-align:right">{% if current_user.can('manager') %}<a class="btn sm" href="{{ url_for('purchasing.suppliers', edit=s.id) }}">Edit</a>{% endif %}
+        <a class="btn sm" href="{{ url_for('purchasing.new', supplier=s.id) }}">Order</a></td></tr>
+    {% endfor %}</tbody></table></div></div>
+  {% if current_user.can('manager') %}
+  <form method="post" class="card">
+    <div class="card-h"><h2>{{ 'Edit ' ~ edit.name if edit else 'Add a supplier' }}</h2>{% if edit %}<a href="{{ url_for('purchasing.suppliers') }}" style="font-size:13px">New instead</a>{% endif %}</div>
+    <div class="card-b">
+      {% if edit %}<input type="hidden" name="sid" value="{{ edit.id }}">{% endif %}
+      <div class="field"><label>Name</label><input name="name" required value="{{ edit.name if edit else '' }}"></div>
+      <div class="field"><label>Contact person</label><input name="contact" value="{{ edit.contact if edit else '' }}"></div>
+      <div class="row"><div class="field"><label>Phone</label><input name="phone" value="{{ edit.phone if edit else '' }}"></div>
+        <div class="field" style="max-width:120px"><label>Lead time (days)</label><input type="number" min="0" name="lead_days" value="{{ edit.lead_days if edit else 3 }}"></div></div>
+      <div class="field"><label>Email</label><input type="email" name="email" value="{{ edit.email if edit else '' }}"></div>
+      <div class="field"><label>Website / product page</label><input type="url" name="website" value="{{ edit.website if edit and edit.website else '' }}" placeholder="https://"><span class="hint">Used by the TinyFish price check.</span></div>
+    </div>
+    <div class="card-f"><button class="btn primary">{{ 'Save' if edit else 'Add supplier' }}</button></div>
+  </form>{% endif %}
+</div>
+{% endblock %}

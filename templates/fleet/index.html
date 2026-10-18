@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon, status, zone %}
+{% block title %}Robot fleet{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>Robot fleet</h1><p>Where each robot is, how much picking work waits in each zone, and where the AI would move robots right now.</p></div>
+  <div class="actions">
+    <a class="btn" href="{{ url_for('fleet.lab') }}">{{ icon('flask',16) }}Simulation lab</a>
+    {% if current_user.can('manager') %}<form method="post" action="{{ url_for('fleet.all_home') }}" data-confirm="Send every robot back to its home zone?"><button class="btn">Send all home</button></form>{% endif %}
+  </div>
+</div>
+
+<div class="grid g-2-1">
+  <div class="card">
+    <div class="card-h"><h2>Warehouse floor · live</h2><div class="legend"><span><i style="background:var(--g500)"></i>Idle</span><span><i style="background:var(--sky)"></i>Picking</span><span><i style="background:#D49A3A"></i>Charging</span><span><i style="background:var(--clay)"></i>Maintenance</span></div></div>
+    <div class="card-b"><div class="floor">
+      {% for z in pr.zones %}{% set c = z.code %}
+      {% set per = (pr.queue[c] / pr.robots[c]) if pr.robots[c] else pr.queue[c] %}
+      <div class="zone-box {{ 'hot' if per >= 3 or pr.signal[c] >= 2 }}">
+        <h3>{{ zone(c) }} {{ z.name.split('·')[-1] }}</h3>
+        <div class="meta"><span>Open pick lines <b>{{ pr.queue[c] }}</b></span><span>Robots <b>{{ pr.robots[c] }}</b></span><span>Last 3 h <b>{{ pr.recent[c] }}</b></span>
+          {% if pr.signal[c] > 1.05 %}<span class="badge b-warn plain">web x{{ '%.1f'|format(pr.signal[c]) }}</span>{% endif %}</div>
+        <div class="bots">{% for r in robots if r.zone == c %}<span class="bot {{ r.status }}" title="{{ labels[r.status] }} · {{ r.battery|int }}% battery"><i>{{ r.code[1:] }}</i>{{ r.code }}{% if r.home != c %}<small class="muted" style="font-weight:500">from {{ r.home }}</small>{% endif %}</span>{% else %}<span class="muted" style="font-size:13px">No robots here</span>{% endfor %}</div>
+      </div>{% endfor %}
+    </div></div>
+  </div>
+
+  <form method="post" action="{{ url_for('fleet.apply') }}" class="card">
+    <div class="card-h"><h2>{{ icon('sparkle',16) }} AI advice</h2><span class="badge b-ok plain">Twin planner + RL</span></div>
+    <div class="card-b" style="padding-bottom:6px">
+      <div class="lbl" style="margin-bottom:8px">Digital twin · next {{ fc.horizon_min }} minutes · average wait</div>
+      <div class="sim-metrics" style="grid-template-columns:repeat(3,1fr);margin:0">
+        <div><b>{{ fc.base }} s</b><span>robots stay put</span></div>
+        <div style="{{ 'background:var(--g50);border-color:var(--g200)' if moves }}"><b class="{{ 'win' if moves }}">{{ fc.plan }} s</b><span>with the moves below</span></div>
+        <div><b class="{{ 'win' if fc.rl is not none and fc.rl < fc.base else '' }}">{{ fc.rl if fc.rl is not none else '–' }} s</b><span>RL agent drives</span></div>
+      </div>
+      {% if moves %}<p style="margin:10px 0 0;font-size:13px"><b class="win">−{{ fc.gain }}% waiting time</b> predicted if you apply {{ 'this move' if moves|length == 1 else 'these ' ~ moves|length ~ ' moves' }}.</p>{% endif %}
+    </div>
+    {% if moves %}
+      {% for m in moves %}
+      <label class="move-card">
+        <input type="checkbox" name="move" value="{{ loop.index0 }}" checked style="margin-top:4px;accent-color:var(--g700)" {{ 'disabled' if not current_user.can('manager') }}>
+        <div><div class="move-arrow">{{ m.robot }} &nbsp;{{ zone(m['from']) }} {{ icon('arrow',16) }} {{ zone(m.to) }}<span class="muted" style="font-weight:500;font-size:12.5px">· {{ m.battery|int }}% battery</span></div>
+        <div class="muted" style="font-size:13px;margin-top:3px">{{ m.why }}</div></div>
+      </label>{% endfor %}
+      <div class="card-f actions" style="justify-content:space-between">
+        <span class="muted" style="font-size:12.5px">Every zone always keeps at least one robot.</span>
+        {% if current_user.can('manager') %}<button class="btn primary">Apply moves</button>{% else %}<span class="muted" style="font-size:12.5px">Managers can apply these.</span>{% endif %}
+      </div>
+    {% else %}
+      <div class="empty" style="padding:18px">{{ icon('check') }}<div><b style="color:var(--ink)">The fleet is balanced.</b><br>The twin found no move that cuts waiting time in the next {{ fc.horizon_min }} minutes.</div></div>
+    {% endif %}
+    <div class="card-b" style="border-top:1px solid var(--line)">
+      <p class="muted" style="font-size:12.5px;margin:0">How this works: we copy today's floor (robots, open pick lines, recent demand per zone, web signals) into the simulator, try every possible robot move and play the next {{ fc.horizon_min }} minutes for each, then keep the best 1–3 moves. The RL agent ({{ 'trained PPO' if kind == 'ppo' else 'heuristic' }}) is played in the same twin for comparison. Only moves that cut waiting time are suggested. Expected demand now: {% for z in zones %}{{ z }} {{ fc.rates[loop.index0] }}/min{{ ', ' if not loop.last }}{% endfor %}. Add a <a href="{{ url_for('signals.index') }}">demand signal</a> and watch the advice change.</p>
+    </div>
+  </form>
+</div>
+
+<div class="card" style="margin-top:16px">
+  <div class="card-h"><h2>Robots</h2><span class="muted" style="font-size:13px">{{ robots|length }} robots</span></div>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Robot</th><th>Zone</th><th>Home</th><th>Status</th><th style="width:150px">Battery</th><th>Current job</th><th class="num">Jobs done</th><th>Last service</th><th></th></tr></thead>
+    <tbody>{% for r in robots %}
+    <tr><td><b>{{ r.code }}</b></td><td>{{ zone(r.zone) }}</td><td>{{ zone(r.home) }}</td><td>{{ status(r.status) }}</td>
+      <td><div style="display:flex;align-items:center;gap:8px"><div class="bar {{ 'bad' if r.battery < 25 else ('warn' if r.battery < 45) }}" style="flex:1"><span style="width:{{ r.battery }}%"></span></div><span class="num" style="font-size:12.5px;width:34px">{{ r.battery|int }}%</span></div></td>
+      <td>{% if r.job %}<a href="{{ url_for('transfers.index') }}">{{ r.job }}</a>{% else %}<span class="muted">—</span>{% endif %}</td>
+      <td class="num">{{ r.tasks_done|num }}</td><td>{{ r.last_service|when('%d %b') }}</td>
+      <td style="text-align:right;white-space:nowrap">
+        <form method="post" action="{{ url_for('fleet.robot_action', rid=r.id) }}" style="display:inline-flex;gap:6px">
+          {% if current_user.can('manager') %}<select name="zone" class="inline" style="width:auto;padding:4px 8px" onchange="this.form.submit()"><option value="">Move to…</option>{% for z in zones if z != r.zone %}<option>{{ z }}</option>{% endfor %}</select>{% endif %}
+          {% if r.status == 'charging' %}<button class="btn sm" name="action" value="charged">Charged</button>
+          {% elif r.status != 'maintenance' %}<button class="btn sm" name="action" value="charge">Charge</button>{% endif %}
+          <button class="btn sm {{ 'danger' if r.status != 'maintenance' }}" name="action" value="maintenance">{{ 'Back to work' if r.status == 'maintenance' else 'Maintenance' }}</button>
+        </form>
+      </td></tr>{% endfor %}</tbody></table></div>
+</div>
+
+{% if history %}
+<div class="card" style="margin-top:16px"><div class="card-h"><h2>Recent robot moves</h2></div>
+  <div class="table-wrap"><table><thead><tr><th>When</th><th>Robot</th><th>Move</th><th>Why</th><th>By</th></tr></thead><tbody>
+  {% for h in history %}<tr><td style="white-space:nowrap">{{ h.created_at|ago }}</td><td><b>{{ h.code }}</b></td><td>{{ zone(h.from_zone) }} → {{ zone(h.to_zone) }}</td><td class="muted" style="font-size:13px">{{ h.reason }}</td><td>{{ h.source }}<span class="sub">{{ h.name or '' }}</span></td></tr>{% endfor %}
+  </tbody></table></div></div>
+{% endif %}
+{% endblock %}

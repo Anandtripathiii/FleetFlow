@@ -1,0 +1,5 @@
+# only needed to retrain the RL agent (python train_rl.py)
+-r requirements.txt
+stable-baselines3>=2.3
+gymnasium>=0.29
+torch>=2.2

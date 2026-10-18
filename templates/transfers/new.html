@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon %}
+{% block title %}New transfer{% endblock %}
+{% block content %}
+<div class="page-head"><div><div class="crumb"><a href="{{ url_for('transfers.index') }}">Transfers</a> /</div><h1>New transfer</h1>
+<p>Choose where the stock comes from, which shop it goes to, and what to send.</p></div></div>
+<form method="post" class="card" style="max-width:900px" id="tf">
+  <div class="card-b">
+    <div class="row">
+      <div class="field"><label>Send from</label><select name="from_shop_id" id="from"><option value="">Main warehouse</option>{% for s in shops %}<option value="{{ s.id }}">{{ s.name }}</option>{% endfor %}</select><span class="hint">Pick a shop to move spare stock between shops.</span></div>
+      <div class="field"><label>Send to</label><select name="to_shop_id" required><option value="">Choose a shop…</option>{% for s in shops %}<option value="{{ s.id }}" {{ 'selected' if s.id|string == pre_to }}>{{ s.name }} · {{ s.area }}</option>{% endfor %}</select></div>
+      <div class="field" style="max-width:170px"><label>Priority</label><select name="priority"><option value="normal">Normal</option><option value="urgent">Urgent</option><option value="low">Low</option></select></div>
+    </div>
+    <label class="lbl">Items</label>
+    <table style="margin-top:6px;border:1px solid var(--line);border-radius:8px">
+      <thead><tr><th>Product</th><th class="num" style="width:140px">In warehouse</th><th class="num" style="width:120px">Quantity</th><th style="width:50px"></th></tr></thead>
+      <tbody id="lines"></tbody>
+    </table>
+    <button type="button" class="btn sm" style="margin-top:10px" onclick="addLine()">{{ icon('plus',14) }}Add another product</button>
+    <div class="field" style="margin-top:16px"><label>Note for the picker (optional)</label><input type="text" name="note" placeholder="e.g. deliver before 5 pm"></div>
+  </div>
+  <div class="card-f actions" style="justify-content:space-between">
+    <span class="muted" style="font-size:13px" id="sum">0 items</span>
+    <span class="actions"><a class="btn" href="{{ url_for('transfers.index') }}">Cancel</a><button class="btn primary">Create transfer</button></span>
+  </div>
+</form>
+<template id="line"><tr>
+  <td><select name="product_id" required onchange="sync(this)"><option value="">Choose…</option>{% for p in products %}<option value="{{ p.id }}" data-q="{{ p.qty }}" data-u="{{ p.unit }}" data-z="{{ p.zone }}">{{ p.name }} · {{ p.sku }}</option>{% endfor %}</select></td>
+  <td class="num muted wq">—</td>
+  <td class="num"><input class="qty" type="number" name="qty" min="1" required oninput="tot()"></td>
+  <td><button type="button" class="btn sm" onclick="this.closest('tr').remove();tot()" title="Remove">×</button></td>
+</tr></template>
+{% endblock %}
+{% block scripts %}<script>
+function addLine(pid){const n=document.getElementById('line').content.cloneNode(true);document.getElementById('lines').appendChild(n);
+  const sel=[...document.querySelectorAll('#lines select')].pop(); if(pid){sel.value=pid;sync(sel);} tot();}
+function sync(s){const o=s.selectedOptions[0];const td=s.closest('tr').querySelector('.wq');
+  td.textContent=o&&o.dataset.q?(o.dataset.q+' '+o.dataset.u+' · zone '+o.dataset.z):'—';}
+function tot(){const q=[...document.querySelectorAll('#lines input.qty')].reduce((a,i)=>a+(+i.value||0),0);
+  document.getElementById('sum').textContent=document.querySelectorAll('#lines tr').length+' line(s) · '+q+' units';}
+addLine({{ pre_product|tojson if pre_product else 'null' }});
+</script>{% endblock %}

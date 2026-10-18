@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon %}
+{% block title %}New purchase order{% endblock %}
+{% block content %}
+<div class="page-head"><div><div class="crumb"><a href="{{ url_for('purchasing.index') }}">Purchasing</a> /</div><h1>New purchase order</h1>
+<p>It is saved as a draft first. Send it when you are happy, and receive it when the goods arrive.</p></div></div>
+<form method="post" class="card" style="max-width:900px">
+  <div class="card-b">
+    <div class="row">
+      <div class="field"><label>Supplier</label><select name="supplier_id" id="sup" required onchange="filter()"><option value="">Choose…</option>{% for s in sups %}<option value="{{ s.id }}" {{ 'selected' if s.id|string == pre_sup }}>{{ s.name }} · {{ s.lead_days }} day lead time</option>{% endfor %}</select></div>
+      <div class="field"><label>Note (optional)</label><input type="text" name="note"></div>
+    </div>
+    <label class="lbl">Items</label>
+    <table style="margin-top:6px;border:1px solid var(--line);border-radius:8px">
+      <thead><tr><th>Product</th><th class="num" style="width:110px">In stock</th><th class="num" style="width:110px">Quantity</th><th class="num" style="width:130px">Cost each (₹)</th><th class="num" style="width:110px">Line total</th><th style="width:46px"></th></tr></thead>
+      <tbody id="lines"></tbody></table>
+    <button type="button" class="btn sm" style="margin-top:10px" onclick="addLine()">{{ icon('plus',14) }}Add product</button>
+  </div>
+  <div class="card-f actions" style="justify-content:space-between"><b id="total">₹0</b>
+    <span class="actions"><a class="btn" href="{{ url_for('purchasing.index') }}">Cancel</a><button class="btn primary">Save draft</button></span></div>
+</form>
+<template id="line"><tr>
+  <td><select name="product_id" required onchange="pick(this)"><option value="">Choose…</option>{% for p in products %}<option value="{{ p.id }}" data-s="{{ p.supplier_id }}" data-c="{{ p.unit_cost }}" data-q="{{ p.qty }}" data-r="{{ p.reorder_qty }}">{{ p.name }} · {{ p.sku }}</option>{% endfor %}</select></td>
+  <td class="num muted st">—</td>
+  <td class="num"><input class="qty" type="number" name="qty" min="1" required oninput="tot()"></td>
+  <td class="num"><input class="qty" style="width:110px" type="number" step="0.01" min="0" name="unit_cost" required oninput="tot()"></td>
+  <td class="num lt">—</td>
+  <td><button type="button" class="btn sm" onclick="this.closest('tr').remove();tot()">×</button></td></tr></template>
+{% endblock %}
+{% block scripts %}<script>
+const fmt=v=>'₹'+Math.round(v).toLocaleString('en-IN');
+function addLine(){document.getElementById('lines').appendChild(document.getElementById('line').content.cloneNode(true));filter();}
+function filter(){const s=document.getElementById('sup').value;document.querySelectorAll('#lines option[data-s]').forEach(o=>o.hidden=s&&o.dataset.s!==s);}
+function pick(sel){const o=sel.selectedOptions[0],tr=sel.closest('tr');tr.querySelector('.st').textContent=o.dataset.q||'—';
+  const [q,c]=tr.querySelectorAll('input');if(!q.value)q.value=o.dataset.r||'';c.value=o.dataset.c||'';tot();}
+function tot(){let t=0;document.querySelectorAll('#lines tr').forEach(tr=>{const [q,c]=tr.querySelectorAll('input');const v=(+q.value||0)*(+c.value||0);t+=v;tr.querySelector('.lt').textContent=v?fmt(v):'—';});
+  document.getElementById('total').textContent='Total '+fmt(t);}
+addLine();
+</script>{% endblock %}

@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon, status, zone %}
+{% block title %}{{ s.name }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><div class="crumb"><a href="{{ url_for('shops.index') }}">Shops</a> / <span class="mono">{{ s.code }}</span></div>
+    <h1>{{ s.name }} {% if not s.active %}<span class="badge b-off plain">Closed</span>{% endif %}</h1>
+    <p>{{ s.address or s.area }} · {{ s.manager or 'No manager' }} {{ s.phone or '' }}</p></div>
+  <div class="actions">
+    <a class="btn primary" href="{{ url_for('transfers.new', to=s.id) }}">{{ icon('truck',16) }}Send stock here</a>
+    {% if current_user.can('manager') %}<a class="btn" href="{{ url_for('shops.edit', sid=s.id) }}">{{ icon('edit',16) }}Edit</a>{% endif %}
+  </div>
+</div>
+
+<div class="grid g4">
+  <div class="card kpi"><div class="label">Products tracked</div><div class="value">{{ sm['items'] }}</div><div class="sub">in this shop</div></div>
+  <div class="card kpi"><span class="kpi-ico {{ 'warn' if sm.low }}">{{ icon('alert',16) }}</span><div class="label">Below minimum</div><div class="value" style="{{ 'color:var(--amber)' if sm.low }}">{{ sm.low }}</div><div class="sub">{{ sm.empty }} completely empty</div></div>
+  <div class="card kpi"><div class="label">Units on the way</div><div class="value">{{ sm.on_way }}</div><div class="sub">open transfers to this shop</div></div>
+  <div class="card kpi"><div class="label">Sold · last 7 days</div><div class="value">{{ sales7|num }}</div><div class="sub">recorded counter sales</div></div>
+</div>
+
+<div class="grid g-2-1" style="margin-top:16px">
+  <div class="card">
+    <div class="card-h">
+      <div class="tabs"><a href="{{ url_for('shops.detail', sid=s.id) }}" class="{{ 'on' if view == 'all' }}">All products</a><a href="{{ url_for('shops.detail', sid=s.id, view='low') }}" class="{{ 'on' if view == 'low' }}">Below minimum</a></div>
+      <button class="btn sm" onclick="addp.showModal()">{{ icon('plus',14) }}Add product</button>
+    </div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Product</th><th class="num">On shelf</th><th class="num">Minimum</th><th class="num">On the way</th><th class="num">Warehouse</th><th></th></tr></thead>
+      <tbody>
+      {% for r in stock %}
+      <tr class="{{ 'row-out' if r.qty == 0 else ('row-low' if r.qty < r.min_qty) }}">
+        <td><a href="{{ url_for('inventory.detail', pid=r.product_id) }}">{{ r.name }}</a><span class="sub mono">{{ r.sku }}</span></td>
+        <td class="num"><b>{{ r.qty }}</b></td>
+        <td class="num">{{ r.min_qty }}</td>
+        <td class="num">{{ r.on_way or '—' }}</td>
+        <td class="num muted">{{ r.wh_qty }}</td>
+        <td style="text-align:right;white-space:nowrap">
+          <button class="btn sm" onclick="openRow('sale',{{ r.product_id }},'{{ r.name|e }}',{{ r.qty }})">Sale</button>
+          <button class="btn sm" onclick="openRow('count',{{ r.product_id }},'{{ r.name|e }}',{{ r.qty }})">Count</button>
+          <button class="btn sm" onclick="openRow('min',{{ r.product_id }},'{{ r.name|e }}',{{ r.min_qty }})">Min</button>
+          {% if r.qty < r.min_qty and not r.on_way %}<a class="btn sm soft" href="{{ url_for('transfers.new', to=s.id, product=r.product_id) }}">Refill</a>{% endif %}
+        </td>
+      </tr>
+      {% else %}<tr><td colspan="6"><div class="empty">{{ icon('check') }}<div>{{ 'Nothing below minimum here.' if view == 'low' else 'No products tracked yet.' }}</div></div></td></tr>{% endfor %}
+      </tbody></table></div>
+  </div>
+  <div class="card">
+    <div class="card-h"><h2>Recent transfers</h2><a style="font-size:13px" href="{{ url_for('transfers.index', status='all', shop=s.id) }}">All</a></div>
+    <div class="card-b tight"><table><tbody>
+      {% for t in transfers %}
+      <tr><td><a href="{{ url_for('transfers.detail', tid=t.id) }}"><b>{{ t.code }}</b></a><span class="sub">{{ 'from ' ~ t.src if t.to_shop_id == s.id else 'sent to another shop' }} · {{ t.created_at|ago }}</span></td><td style="text-align:right">{{ status(t.status) }}</td></tr>
+      {% else %}<tr><td class="empty">No transfers yet.</td></tr>{% endfor %}
+    </tbody></table></div>
+    {% if current_user.can('manager') %}
+    <div class="card-f"><form method="post" action="{{ url_for('shops.toggle', sid=s.id) }}" data-confirm="{{ 'Close this shop? It will be skipped by the planner.' if s.active else 'Re-open this shop?' }}"><button class="btn sm {{ 'danger' if s.active }}">{{ 'Mark shop as closed' if s.active else 'Re-open shop' }}</button></form></div>
+    {% endif %}
+  </div>
+</div>
+
+<dialog id="rowdlg"><form method="post" action="{{ url_for('shops.stock_action', sid=s.id) }}">
+  <div class="dlg-h"><h3 id="rtitle"></h3><button type="button" class="btn sm" onclick="rowdlg.close()">Close</button></div>
+  <div class="dlg-b"><input type="hidden" name="action" id="ract"><input type="hidden" name="product_id" id="rpid">
+    <div class="field"><label id="rlbl"></label><input type="number" name="qty" id="rqty" min="0" required></div><p class="muted" id="rhint" style="font-size:13px"></p></div>
+  <div class="dlg-f"><button type="button" class="btn" onclick="rowdlg.close()">Cancel</button><button class="btn primary">Save</button></div>
+</form></dialog>
+
+<dialog id="addp"><form method="post" action="{{ url_for('shops.stock_action', sid=s.id) }}">
+  <input type="hidden" name="action" value="add">
+  <div class="dlg-h"><h3>Track a new product in this shop</h3><button type="button" class="btn sm" onclick="addp.close()">Close</button></div>
+  <div class="dlg-b">
+    <div class="field"><label>Product</label><select name="product_id" required><option value="">Choose…</option>{% for p in others %}<option value="{{ p.id }}">{{ p.name }} ({{ p.sku }})</option>{% endfor %}</select></div>
+    <div class="row"><div class="field"><label>On shelf now</label><input type="number" name="qty" min="0" value="0"></div><div class="field"><label>Minimum to keep</label><input type="number" name="min_qty" min="0" value="5"></div></div>
+  </div>
+  <div class="dlg-f"><button type="button" class="btn" onclick="addp.close()">Cancel</button><button class="btn primary">Add</button></div>
+</form></dialog>
+{% endblock %}
+{% block scripts %}<script>
+function openRow(act,pid,name,val){
+  ract.value=act; rpid.value=pid;
+  const t={sale:['Record a sale','How many sold?','This takes the units off the shop shelf.'],
+           count:['Shelf count','Counted on the shelf','We save the difference as a correction.'],
+           min:['Minimum level','Keep at least','The restock planner refills when the shelf drops below this.']}[act];
+  rtitle.textContent=t[0]+' · '+name; rlbl.textContent=t[1]; rhint.textContent=t[2]+' Now: '+val+'.';
+  rqty.value=act==='sale'?'':val; rqty.min=act==='sale'?1:0; rowdlg.showModal(); rqty.focus();
+}
+</script>{% endblock %}

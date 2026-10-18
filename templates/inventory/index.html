@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon, zone, stockbar %}
+{% block title %}Inventory{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>Inventory</h1><p>Everything in the main warehouse: where it sits, how much is left, and how much the shops hold.</p></div>
+  <div class="actions">
+    <a class="btn" href="{{ url_for('main.export', kind='stock') }}">{{ icon('download',16) }}Export CSV</a>
+    {% if current_user.can('manager') %}
+    <a class="btn" href="{{ url_for('inventory.import_csv') }}">{{ icon('upload',16) }}Import</a>
+    <a class="btn primary" href="{{ url_for('inventory.new') }}">{{ icon('plus',16) }}Add product</a>
+    {% endif %}
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-h" style="flex-wrap:wrap">
+    <div class="tabs">
+      {% for v, l in [('all','All'),('low','Low stock'),('out','Out of stock'),('archived','Archived')] %}
+      <a href="{{ url_for('inventory.index', view=v, q=f.q, cat=f.cat, zone=f.zone) }}" class="{{ 'on' if f.view == v }}">{{ l }}</a>
+      {% endfor %}
+    </div>
+    <form class="filters" method="get">
+      <input type="hidden" name="view" value="{{ f.view }}">
+      <input type="search" name="q" placeholder="Name, SKU or bin" value="{{ f.q }}">
+      <select name="cat" onchange="this.form.submit()"><option value="">All categories</option>{% for c in cats %}<option {{ 'selected' if c == f.cat }}>{{ c }}</option>{% endfor %}</select>
+      <select name="zone" onchange="this.form.submit()"><option value="">All zones</option>{% for z in zones %}<option value="{{ z.code }}" {{ 'selected' if z.code == f.zone }}>{{ z.name }}</option>{% endfor %}</select>
+      <select name="sort" onchange="this.form.submit()">
+        {% for v,l in [('sku','Sort: SKU'),('name','Sort: name'),('health','Sort: lowest first'),('qty','Sort: quantity'),('value','Sort: value')] %}<option value="{{ v }}" {{ 'selected' if f.sort == v }}>{{ l }}</option>{% endfor %}
+      </select>
+    </form>
+  </div>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Product</th><th>Category</th><th>Zone / bin</th><th class="num">In warehouse</th><th style="width:120px">Level</th><th class="num">In shops</th><th class="num">Cost</th><th class="num">Value</th><th>Supplier</th></tr></thead>
+    <tbody>
+    {% for p in rows %}
+    <tr class="{{ 'row-out' if p.qty == 0 else ('row-low' if p.qty <= p.reorder_level) }}">
+      <td><a href="{{ url_for('inventory.detail', pid=p.id) }}"><b>{{ p.name }}</b></a><span class="sub mono">{{ p.sku }}</span></td>
+      <td>{{ p.category }}</td>
+      <td>{{ zone(p.zone) }} <span class="mono muted">{{ p.bin }}</span></td>
+      <td class="num"><b>{{ p.qty|num }}</b> <span class="muted">{{ p.unit }}</span>{% if p.qty == 0 %}<span class="sub" style="color:var(--clay)">out of stock</span>{% elif p.qty <= p.reorder_level %}<span class="sub" style="color:var(--amber)">reorder at {{ p.reorder_level }}</span>{% endif %}</td>
+      <td>{{ stockbar(p.qty, p.reorder_level) }}</td>
+      <td class="num">{{ p.in_shops|num }}</td>
+      <td class="num">{{ p.unit_cost|inr }}</td>
+      <td class="num">{{ (p.qty * p.unit_cost)|inr }}</td>
+      <td class="muted" style="font-size:13px">{{ p.supplier or '—' }}</td>
+    </tr>
+    {% else %}
+    <tr><td colspan="9"><div class="empty">{{ icon('box') }}<div>No products match these filters.</div></div></td></tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+  <div class="card-f" style="display:flex;justify-content:space-between;font-size:13.5px"><span class="muted">{{ rows|length }} product{{ 's' if rows|length != 1 }}</span><span>{{ totals.units|num }} units · <b>{{ totals.value|inr }}</b> at cost</span></div>
+</div>
+{% endblock %}

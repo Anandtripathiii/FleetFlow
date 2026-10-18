@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Users{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Users</h1><p>Who can log in and what they are allowed to do.</p></div></div>
+<div class="grid g-2-1">
+  <div class="card"><div class="table-wrap"><table>
+    <thead><tr><th>Name</th><th>Role</th><th>Last login</th><th>Status</th><th></th></tr></thead>
+    <tbody>{% for u in rows %}
+    <tr style="{{ 'opacity:.55' if not u.active }}"><td><b style="font-weight:600">{{ u.name }}</b><span class="sub">{{ u.email }}</span></td>
+      <td>{% if u.id == current_user.id %}<span class="badge b-ok plain" style="text-transform:capitalize">{{ u.role }} (you)</span>{% else %}
+        <form method="post" style="display:inline"><input type="hidden" name="action" value="role"><input type="hidden" name="uid" value="{{ u.id }}">
+        <select name="role" class="inline" style="width:auto;padding:4px 8px" onchange="this.form.submit()">{% for r in ['staff','manager','admin'] %}<option value="{{ r }}" {{ 'selected' if u.role == r }}>{{ r|capitalize }}</option>{% endfor %}</select></form>{% endif %}</td>
+      <td style="font-size:13px">{{ u.last_login|ago }}</td>
+      <td>{{ '<span class="badge b-ok">Active</span>'|safe if u.active else '<span class="badge b-off">Off</span>'|safe }}</td>
+      <td style="text-align:right;white-space:nowrap">{% if u.id != current_user.id %}
+        <form method="post" style="display:inline"><input type="hidden" name="uid" value="{{ u.id }}"><button class="btn sm" name="action" value="reset">Reset password</button>
+        <button class="btn sm {{ 'danger' if u.active }}" name="action" value="toggle">{{ 'Switch off' if u.active else 'Switch on' }}</button></form>{% endif %}</td></tr>
+    {% endfor %}</tbody></table></div></div>
+  <form method="post" class="card"><input type="hidden" name="action" value="add">
+    <div class="card-h"><h2>Add a user</h2></div><div class="card-b">
+      <div class="field"><label>Name</label><input name="name" required></div>
+      <div class="field"><label>Email</label><input type="email" name="email" required></div>
+      <div class="row"><div class="field"><label>Password</label><input type="password" name="password" minlength="6" required></div>
+        <div class="field"><label>Role</label><select name="role"><option value="staff">Staff</option><option value="manager">Manager</option><option value="admin">Admin</option></select></div></div>
+      <button class="btn primary">Add user</button></div></form>
+</div>
+{% endblock %}

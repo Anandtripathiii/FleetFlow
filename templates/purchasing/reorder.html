@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon %}
+{% block title %}Reorder suggestions{% endblock %}
+{% block content %}
+<div class="page-head"><div><div class="crumb"><a href="{{ url_for('purchasing.index') }}">Purchasing</a> /</div><h1>Reorder suggestions</h1>
+<p>Products at or below their reorder level, minus what is already on order. One draft order is made per supplier.</p></div></div>
+<form method="post" class="card">
+  <div class="table-wrap"><table>
+    <thead><tr><th style="width:36px"><input type="checkbox" checked onclick="document.querySelectorAll('.pk').forEach(c=>c.checked=this.checked)"></th><th>Product</th><th>Supplier</th><th class="num">In stock</th><th class="num">Reorder level</th><th class="num">On order</th><th class="num">Order qty</th><th class="num">Cost</th></tr></thead>
+    <tbody>
+    {% for r in plan %}
+    <tr class="{{ 'row-out' if r.qty == 0 else 'row-low' }}">
+      <td><input type="checkbox" class="pk" name="pick" value="{{ r.id }}" checked {{ 'disabled' if not r.supplier_id }}></td>
+      <td><a href="{{ url_for('inventory.detail', pid=r.id) }}">{{ r.name }}</a><span class="sub mono">{{ r.sku }}</span></td>
+      <td>{{ r.supplier }}{% if r.lead %}<span class="sub">{{ r.lead }} day lead time</span>{% endif %}</td>
+      <td class="num"><b>{{ r.qty }}</b></td><td class="num">{{ r.level }}</td><td class="num">{{ r.on_order or '—' }}</td>
+      <td class="num"><input class="qty" type="number" min="1" name="qty_{{ r.id }}" value="{{ r.suggest }}"></td>
+      <td class="num">{{ (r.suggest * r.cost)|inr }}</td></tr>
+    {% else %}<tr><td colspan="8"><div class="empty">{{ icon('check') }}<div>Nothing needs reordering right now.</div></div></td></tr>{% endfor %}
+    </tbody></table></div>
+  {% if plan %}<div class="card-f actions" style="justify-content:flex-end">
+    {% if current_user.can('manager') %}<button class="btn primary">{{ icon('cart',16) }}Create draft orders</button>{% else %}<span class="muted">Ask a manager to create these orders.</span>{% endif %}</div>{% endif %}
+</form>
+{% endblock %}

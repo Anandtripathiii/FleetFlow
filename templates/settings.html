@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon %}
+{% block title %}Settings{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Settings</h1><p>Company details, sign-ups and the TinyFish connection.</p></div></div>
+<div class="grid g2" style="max-width:1000px">
+  <form method="post" class="card"><input type="hidden" name="action" value="save">
+    <div class="card-h"><h2>General</h2></div><div class="card-b">
+      <div class="field"><label>Company name</label><input name="company" value="{{ company }}"></div>
+      <div class="field"><label>City for demand signals</label><input name="city" value="{{ city }}"><span class="hint">TinyFish searches news for this city.</span></div>
+      <label class="check"><input type="checkbox" name="allow_signup" {{ 'checked' if allow_signup }}> Let new people create their own staff account</label>
+      <hr>
+      <div class="lbl" style="margin-bottom:6px">{{ icon('globe',14) }} TinyFish API key</div>
+      {% if env_key %}<div class="note">Using the key from the <span class="mono">TINYFISH_API_KEY</span> environment variable. That is the safest place for it.</div>
+      {% else %}
+        {% if db_key_hint %}<p style="font-size:13px">Saved key: <span class="mono">{{ db_key_hint }}</span> <label class="check" style="display:inline-flex;margin-left:8px"><input type="checkbox" name="clear_key"> remove</label></p>{% endif %}
+        <div class="field"><input type="password" name="tinyfish_key" placeholder="{{ 'Paste a new key to replace it' if db_key_hint else 'Paste your key from agent.tinyfish.ai' }}" autocomplete="off"><span class="hint">Get one at agent.tinyfish.ai → API keys. For a live deployment, prefer the TINYFISH_API_KEY environment variable.</span></div>
+      {% endif %}
+    </div>
+    <div class="card-f"><button class="btn primary">Save settings</button></div></form>
+  <form method="post" class="card" style="align-self:start"><input type="hidden" name="action" value="reset_demo">
+    <div class="card-h"><h2>Demo data</h2></div><div class="card-b">
+      <p style="font-size:14px">Wipe all products, shops, transfers, orders, robots and signals and load the sample warehouse again. Your own user accounts stay.</p>
+      <div class="field"><label>Type RESET to confirm</label><input name="confirm" autocomplete="off"></div>
+      <button class="btn danger">Reload demo data</button></div></form>
+</div>
+{% endblock %}

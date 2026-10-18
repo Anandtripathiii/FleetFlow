@@ -1,0 +1,74 @@
+{% from "_macros.html" import icon %}<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}{% endblock %} · {{ APP_NAME }}</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}?v=1">
+<link rel="icon" href="{{ url_for('static', filename='img/mark.svg') }}">
+{% block head %}{% endblock %}
+</head>
+<body>
+{% set ep = request.endpoint or '' %}
+<div class="shell">
+  <aside class="side" id="side">
+    <a class="brand" href="{{ url_for('main.dashboard') }}" style="text-decoration:none">
+      <img src="{{ url_for('static', filename='img/mark.svg') }}" width="34" height="34" alt="">
+      <span><span class="brand-name">{{ APP_NAME }}</span><br><span class="brand-sub">Warehouse & fleet</span></span>
+    </a>
+    <nav class="nav">
+      <div class="nav-group">Overview</div>
+      <a href="{{ url_for('main.dashboard') }}" class="{{ 'on' if ep == 'main.dashboard' }}">{{ icon('home') }}Dashboard</a>
+      <a href="{{ url_for('main.alerts_page') }}" class="{{ 'on' if ep == 'main.alerts_page' }}">{{ icon('bell') }}Alerts{% if nav_alerts %}<span class="pill {{ 'bad' if nav_alerts|selectattr(0,'equalto','danger')|list else 'warn' }}">{{ nav_alerts|length }}</span>{% endif %}</a>
+      <div class="nav-group">Stock</div>
+      <a href="{{ url_for('inventory.index') }}" class="{{ 'on' if ep.startswith('inventory.') }}">{{ icon('box') }}Inventory</a>
+      <a href="{{ url_for('shops.index') }}" class="{{ 'on' if ep.startswith('shops.') }}">{{ icon('store') }}Shops</a>
+      <a href="{{ url_for('transfers.index') }}" class="{{ 'on' if ep.startswith('transfers.') }}">{{ icon('truck') }}Transfers</a>
+      <a href="{{ url_for('purchasing.index') }}" class="{{ 'on' if ep.startswith('purchasing.') }}">{{ icon('cart') }}Purchasing</a>
+      <div class="nav-group">Fleet & AI</div>
+      <a href="{{ url_for('fleet.index') }}" class="{{ 'on' if ep in ('fleet.index',) }}">{{ icon('robot') }}Robot fleet</a>
+      <a href="{{ url_for('fleet.lab') }}" class="{{ 'on' if ep == 'fleet.lab' }}">{{ icon('flask') }}Simulation lab</a>
+      <a href="{{ url_for('signals.index') }}" class="{{ 'on' if ep.startswith('signals.') }}">{{ icon('signal') }}Demand signals</a>
+      <div class="nav-group">Insights</div>
+      <a href="{{ url_for('main.reports') }}" class="{{ 'on' if ep == 'main.reports' }}">{{ icon('chart') }}Reports</a>
+      <a href="{{ url_for('main.activity') }}" class="{{ 'on' if ep == 'main.activity' }}">{{ icon('list') }}Activity log</a>
+      {% if current_user.can('admin') %}
+      <div class="nav-group">Admin</div>
+      <a href="{{ url_for('main.users') }}" class="{{ 'on' if ep == 'main.users' }}">{{ icon('users') }}Users</a>
+      <a href="{{ url_for('main.settings') }}" class="{{ 'on' if ep == 'main.settings' }}">{{ icon('gear') }}Settings</a>
+      {% endif %}
+    </nav>
+    <div class="side-foot">Signed in as <b>{{ current_user.name }}</b><br><a href="{{ url_for('auth.logout') }}">Log out</a></div>
+  </aside>
+
+  <div class="main">
+    <header class="top">
+      <button class="icon-btn menu-btn" onclick="document.body.classList.toggle('nav-open')" aria-label="Menu">{{ icon('menu') }}</button>
+      <form action="{{ url_for('main.search') }}" role="search">
+        <label class="search">{{ icon('search', 16) }}<input name="q" placeholder="Search products, SKUs, shops, TR-0001…" value="{{ request.args.get('q','') if ep == 'main.search' }}"></label>
+      </form>
+      <div class="top-right">
+        <a class="btn soft sm no-print" href="{{ url_for('transfers.new') }}">{{ icon('plus', 16) }}New transfer</a>
+        <a class="icon-btn" href="{{ url_for('main.alerts_page') }}" title="Alerts">{{ icon('bell') }}{% if nav_alerts %}<span class="dot">{{ nav_alerts|length }}</span>{% endif %}</a>
+        <a class="user-chip" href="{{ url_for('main.profile') }}"><span class="avatar">{{ current_user.initials }}</span><span class="who"><b style="font-weight:600">{{ current_user.name.split()[0] }}</b> <span class="role">· {{ current_user.role }}</span></span></a>
+      </div>
+    </header>
+    <main class="content">
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+</div>
+
+<div class="flashes">
+{% for cat, msg in get_flashed_messages(with_categories=true) %}
+  <div class="flash {{ cat }}"><span>{{ msg }}</span><button onclick="this.parentNode.remove()" aria-label="Close">×</button></div>
+{% endfor %}
+</div>
+<script>
+setTimeout(()=>document.querySelectorAll('.flash.success,.flash.info').forEach(e=>e.remove()),6000);
+document.addEventListener('click',e=>{if(document.body.classList.contains('nav-open')&&!e.target.closest('.side,.menu-btn'))document.body.classList.remove('nav-open')});
+document.querySelectorAll('[data-confirm]').forEach(f=>f.addEventListener('submit',e=>{if(!confirm(f.dataset.confirm))e.preventDefault()}));
+</script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}My account{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>My account</h1><p>{{ current_user.name }} · {{ current_user.email }} · <span style="text-transform:capitalize">{{ current_user.role }}</span></p></div>
+  <a class="btn" href="{{ url_for('auth.logout') }}">Log out</a></div>
+<div class="grid g2" style="max-width:900px">
+  <form method="post" class="card"><div class="card-h"><h2>Change password</h2></div><div class="card-b">
+    <div class="field"><label>Current password</label><input type="password" name="current" required></div>
+    <div class="field"><label>New password</label><input type="password" name="new" minlength="6" required></div>
+    <div class="field"><label>Repeat new password</label><input type="password" name="confirm" minlength="6" required></div>
+    <button class="btn primary">Update password</button></div></form>
+  <div class="card"><div class="card-h"><h2>What your role can do</h2></div><div class="card-b" style="font-size:14px">
+    <p><b>Staff</b>: view everything, adjust stock, record shop sales and counts, create and move transfers, charge robots.</p>
+    <p><b>Manager</b>: everything staff can, plus add products and shops, create purchase orders, and apply AI robot moves.</p>
+    <p style="margin:0"><b>Admin</b>: everything, plus users, settings, the TinyFish key and resetting demo data.</p>
+  </div></div>
+</div>
+{% endblock %}

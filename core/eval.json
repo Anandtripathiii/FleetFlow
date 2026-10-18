@@ -1,0 +1,38 @@
+{
+ "normal": {
+  "rules": 47.1,
+  "rl": 25.1,
+  "better_pct": 46.8,
+  "heuristic": 22.8
+ },
+ "spike": {
+  "rules": 334.5,
+  "rl": 256.3,
+  "better_pct": 23.4,
+  "heuristic": 253.1
+ },
+ "moving": {
+  "rules": 319.2,
+  "rl": 263.9,
+  "better_pct": 17.3,
+  "heuristic": 255.7
+ },
+ "rush": {
+  "rules": 231.9,
+  "rl": 154.4,
+  "better_pct": 33.4,
+  "heuristic": 141.7
+ },
+ "failure": {
+  "rules": 376.7,
+  "rl": 321.8,
+  "better_pct": 14.6,
+  "heuristic": 321.0
+ },
+ "mixed": {
+  "rules": 235.7,
+  "rl": 252.5,
+  "better_pct": -7.1,
+  "heuristic": 89.3
+ }
+}

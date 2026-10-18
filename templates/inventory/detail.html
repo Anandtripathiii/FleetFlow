@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon, zone, stockbar, status %}
+{% block title %}{{ p.name }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <div class="crumb"><a href="{{ url_for('inventory.index') }}">Inventory</a> / <span class="mono">{{ p.sku }}</span></div>
+    <h1>{{ p.name }} {% if not p.active %}<span class="badge b-off plain">Archived</span>{% endif %}</h1>
+    <p>{{ p.category }} · {{ p.zone_name or 'No zone' }} · bin <span class="mono">{{ p.bin or '—' }}</span></p>
+  </div>
+  <div class="actions">
+    <button class="btn primary" onclick="adj.showModal()">{{ icon('swap',16) }}Stock in / out</button>
+    <a class="btn" href="{{ url_for('transfers.new', product=p.id) }}">{{ icon('truck',16) }}Send to a shop</a>
+    {% if current_user.can('manager') %}<a class="btn" href="{{ url_for('inventory.edit', pid=p.id) }}">{{ icon('edit',16) }}Edit</a>{% endif %}
+  </div>
+</div>
+
+<div class="grid g4">
+  <div class="card kpi {{ 'accent' if p.qty > p.reorder_level }}"><div class="label">In warehouse</div><div class="value">{{ p.qty|num }} <span style="font-size:14px;font-weight:500">{{ p.unit }}</span></div><div class="sub">reorder at {{ p.reorder_level }}</div></div>
+  <div class="card kpi"><div class="label">Sent out · last 30 days</div><div class="value">{{ out30|num }}</div><div class="sub">about {{ '%.1f'|format(per_day) }} per day</div></div>
+  <div class="card kpi"><div class="label">Days of cover</div><div class="value" style="{{ 'color:var(--clay)' if cover is not none and cover < 7 }}">{{ '%.0f'|format(cover) if cover is not none else '—' }}</div><div class="sub">{% if cover is not none and p.lead_days %}supplier needs {{ p.lead_days }} days{% else %}at the current pace{% endif %}</div></div>
+  <div class="card kpi"><div class="label">Stock value</div><div class="value">{{ (p.qty * p.unit_cost)|inr }}</div><div class="sub">cost {{ p.unit_cost|inr(2) }} · sells at {{ p.unit_price|inr(2) }}</div></div>
+</div>
+
+{% if p.qty <= p.reorder_level %}
+<div class="note warn" style="margin-top:16px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+  <span>{{ icon('alert',16) }} Stock is at or below the reorder level.{% if open_po %} Already on order: {% for o in open_po %}<a href="{{ url_for('purchasing.detail', po_id=o.id) }}">{{ o.code }}</a> ({{ o.qty }}){{ ', ' if not loop.last }}{% endfor %}.{% endif %}</span>
+  {% if not open_po and current_user.can('manager') %}<a class="btn sm primary" href="{{ url_for('purchasing.reorder') }}">Reorder now</a>{% endif %}
+</div>
+{% endif %}
+
+<div class="grid g-2-1" style="margin-top:16px">
+  <div class="card">
+    <div class="card-h"><h2>Stock history</h2><span class="muted" style="font-size:13px">every change, who made it and why</span></div>
+    <div class="table-wrap" style="max-height:460px;overflow-y:auto"><table>
+      <thead><tr><th>When</th><th>Where</th><th>Reason</th><th class="num">Change</th><th class="num">Balance</th><th>By</th></tr></thead>
+      <tbody>
+      {% for m in moves %}
+      <tr><td style="white-space:nowrap">{{ m.created_at|when }}</td>
+          <td>{{ 'Warehouse' if m.location == 'warehouse' else m.location }}</td>
+          <td>{{ m.reason|capitalize }}{% if m.ref %}<span class="sub">{{ m.ref }}</span>{% endif %}</td>
+          <td class="num" style="color:{{ 'var(--g700)' if m.change > 0 else 'var(--clay)' }};font-weight:600">{{ '%+d'|format(m.change) }}</td>
+          <td class="num">{{ m.balance if m.balance is not none else '—' }}</td>
+          <td class="muted" style="font-size:13px">{{ m.user or '—' }}</td></tr>
+      {% else %}<tr><td colspan="6" class="empty">No movements yet.</td></tr>{% endfor %}
+      </tbody></table></div>
+  </div>
+  <div class="stack">
+    <div class="card">
+      <div class="card-h"><h2>In the shops</h2></div>
+      <div class="card-b tight"><table><tbody>
+        {% for s in shops %}
+        <tr class="{{ 'row-low' if s.qty < s.min_qty }}"><td><a href="{{ url_for('shops.detail', sid=s.shop_id) }}">{{ s.name }}</a></td>
+            <td class="num"><b>{{ s.qty }}</b><span class="sub">min {{ s.min_qty }}</span></td></tr>
+        {% else %}<tr><td class="empty">No shop stocks this yet.</td></tr>{% endfor %}
+      </tbody></table></div>
+    </div>
+    <div class="card"><div class="card-b">
+      <dl class="dl">
+        <dt>Supplier</dt><dd>{% if p.sup_id %}<a href="{{ url_for('purchasing.suppliers') }}">{{ p.supplier }}</a>{% else %}—{% endif %}</dd>
+        <dt>Zone</dt><dd>{{ zone(p.zone) }} {{ p.zone_name or '' }}</dd>
+        <dt>Reorder</dt><dd>{{ p.reorder_qty }} {{ p.unit }} when at {{ p.reorder_level }}</dd>
+        <dt>Margin</dt><dd>{% if p.unit_price %}{{ '%.0f'|format((p.unit_price - p.unit_cost) / p.unit_price * 100) }}%{% else %}—{% endif %}</dd>
+      </dl>
+      {% if current_user.can('manager') %}
+      <form method="post" action="{{ url_for('inventory.archive', pid=p.id) }}" style="margin-top:14px" data-confirm="{{ 'Archive this product? It will be hidden from lists.' if p.active else 'Restore this product?' }}">
+        <button class="btn sm {{ 'danger' if p.active }}">{{ 'Archive product' if p.active else 'Restore product' }}</button></form>
+      {% endif %}
+    </div></div>
+  </div>
+</div>
+
+<dialog id="adj">
+  <form method="post" action="{{ url_for('inventory.adjust', pid=p.id) }}">
+    <div class="dlg-h"><h3>Stock in / out · {{ p.name }}</h3><button type="button" class="btn sm" onclick="adj.close()">Close</button></div>
+    <div class="dlg-b">
+      <div class="field"><label>What happened?</label>
+        <select name="direction" id="dir" onchange="syncReason()">
+          <option value="in">Stock came in (+)</option><option value="out">Stock went out (−)</option><option value="set">I counted the shelf (set exact)</option>
+        </select></div>
+      <div class="field"><label id="qlbl">Quantity</label><input type="number" name="qty" min="1" required></div>
+      <div class="field" id="rwrap"><label>Reason</label><select name="reason" id="reason">{% for k, v in reasons.items() %}<option value="{{ k }}">{{ v }}</option>{% endfor %}</select></div>
+      <div class="field"><label>Note (optional)</label><input type="text" name="note" placeholder="e.g. 3 packets torn in transit"></div>
+      <p class="muted" style="font-size:13px">Now in warehouse: <b>{{ p.qty }}</b> {{ p.unit }}. Every change is saved in the history.</p>
+    </div>
+    <div class="dlg-f"><button type="button" class="btn" onclick="adj.close()">Cancel</button><button class="btn primary">Save</button></div>
+  </form>
+</dialog>
+{% endblock %}
+{% block scripts %}<script>
+function syncReason(){const d=dir.value;rwrap.style.display=d==='set'?'none':'';qlbl.textContent=d==='set'?'Counted quantity':'Quantity';
+ reason.value=d==='in'?'receive':(d==='out'?'damage':'adjust');}
+syncReason();
+</script>{% endblock %}

@@ -1,0 +1,14 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Pick list {{ t.code }}</title>
+<style>body{font-family:Figtree,system-ui,sans-serif;color:#1E2B22;margin:32px;font-size:14px}h1{margin:0 0 4px;font-size:22px}
+table{width:100%;border-collapse:collapse;margin-top:18px}th,td{border:1px solid #CFD8CB;padding:8px 10px;text-align:left}th{background:#F1F8F1}
+.box{width:18px;height:18px;border:2px solid #2F6B4B;border-radius:4px;display:inline-block}.meta{color:#5D6B61}.sig{margin-top:40px;display:flex;gap:60px}
+.sig div{border-top:1px solid #999;padding-top:6px;width:200px;color:#5D6B61}@media print{button{display:none}}</style></head>
+<body><button onclick="print()" style="float:right;padding:8px 14px;border-radius:8px;border:1px solid #2F6B4B;background:#2F6B4B;color:#fff;font:inherit;cursor:pointer">Print</button>
+<h1>Pick list · {{ t.code }}</h1>
+<div class="meta">{{ t.src }} → <b>{{ t.shop }}</b> · {{ t.address }}<br>Priority: <b>{{ t.priority|capitalize }}</b> · Robot: {{ t.robot or '—' }} · Printed {{ now.strftime('%d %b %Y %H:%M') }}</div>
+<table><thead><tr><th style="width:40px"></th><th>Zone</th><th>Bin</th><th>SKU</th><th>Product</th><th>Qty</th></tr></thead><tbody>
+{% for i in items %}<tr><td><span class="box"></span></td><td>{{ i.zone }}</td><td>{{ i.bin }}</td><td>{{ i.sku }}</td><td>{{ i.name }}</td><td><b>{{ i.qty }}</b> {{ i.unit }}</td></tr>{% endfor %}
+</tbody></table>
+{% if t.note %}<p><b>Note:</b> {{ t.note }}</p>{% endif %}
+<div class="sig"><div>Picked by</div><div>Checked by</div><div>Received by (shop)</div></div>
+</body></html>

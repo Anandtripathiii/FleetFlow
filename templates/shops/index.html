@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon, zone %}
+{% block title %}Shops{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>Shops</h1><p>The stores you supply. See which shelves are running low and what is already on the way.</p></div>
+  <div class="actions">
+    <a class="btn" href="{{ url_for('transfers.planner') }}">{{ icon('swap',16) }}Restock planner</a>
+    {% if current_user.can('manager') %}<a class="btn primary" href="{{ url_for('shops.new') }}">{{ icon('plus',16) }}Add shop</a>{% endif %}
+  </div>
+</div>
+<div class="grid g3">
+  {% for s in rows %}
+  {% set health = ((s['items'] - (s.low or 0)) / s['items'] * 100) if s['items'] else 100 %}
+  <a class="card" href="{{ url_for('shops.detail', sid=s.id) }}" style="color:inherit;text-decoration:none;{{ 'opacity:.55' if not s.active }}">
+    <div class="card-b">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+        <div><h2>{{ s.name }}</h2><div class="muted" style="font-size:13px">{{ s.area }} · <span class="mono">{{ s.code }}</span></div></div>
+        {% if not s.active %}<span class="badge b-off plain">Closed</span>{% elif s.empty %}<span class="badge b-out plain">{{ s.empty }} empty</span>{% elif s.low %}<span class="badge b-low plain">{{ s.low }} low</span>{% else %}<span class="badge b-ok plain">Stocked</span>{% endif %}
+      </div>
+      <div style="margin:14px 0 6px;display:flex;justify-content:space-between;font-size:13px"><span class="muted">Shelf health</span><b>{{ '%.0f'|format(health) }}%</b></div>
+      <div class="bar {{ 'bad' if health < 60 else ('warn' if health < 85) }}"><span style="width:{{ health }}%"></span></div>
+      <div style="display:flex;justify-content:space-between;margin-top:14px;font-size:13px">
+        <span><span class="muted">Products</span> <b>{{ s['items'] }}</b></span>
+        <span><span class="muted">Shelf value</span> <b>{{ s.shelf_value|inr }}</b></span>
+        <span><span class="muted">Incoming</span> <b>{{ s.incoming }}</b></span>
+      </div>
+    </div>
+    <div class="card-f" style="font-size:13px;display:flex;justify-content:space-between"><span class="muted">{{ s.manager or 'No manager' }} · {{ s.phone or '' }}</span><span>Nearest zone {{ zone(s.zone) }}</span></div>
+  </a>
+  {% else %}
+  <div class="card"><div class="empty">{{ icon('store') }}<div>No shops yet. Add your first store.</div></div></div>
+  {% endfor %}
+</div>
+{% endblock %}

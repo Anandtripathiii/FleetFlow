@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}Activity log{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Activity log</h1><p>Who did what and when. Stock changes also appear in each product's history.</p></div></div>
+<div class="card"><div class="table-wrap"><table>
+  <thead><tr><th>When</th><th>Who</th><th>What</th><th>Details</th></tr></thead>
+  <tbody>{% for a in rows %}<tr><td style="white-space:nowrap">{{ a.created_at|when }}<span class="sub">{{ a.created_at|ago }}</span></td><td>{{ a.name or 'System' }}</td><td><b style="font-weight:600">{{ a.action }}</b></td><td class="muted" style="font-size:13px">{{ a.detail or '' }}</td></tr>{% endfor %}</tbody>
+</table></div></div>
+{% endblock %}

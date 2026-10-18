@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon, status, priority, zone %}
+{% block title %}{{ t.code }}{% endblock %}
+{% block content %}
+{% set order = ['pending','picking','in_transit','delivered'] %}
+{% set idx = order.index(t.status) if t.status in order else -1 %}
+<div class="page-head">
+  <div><div class="crumb"><a href="{{ url_for('transfers.index') }}">Transfers</a> /</div>
+    <h1>{{ t.code }} {{ status(t.status) }} {{ priority(t.priority) }}</h1>
+    <p>{{ t.src }} → <b>{{ t.shop }}</b> · created {{ t.created_at|when }} by {{ t.by_name or '—' }}</p></div>
+  <div class="actions">
+    <a class="btn" href="{{ url_for('transfers.picklist', tid=t.id) }}" target="_blank">{{ icon('print',16) }}Pick list</a>
+    {% if t.status == 'pending' %}<form method="post" action="{{ url_for('transfers.act', tid=t.id, action='pick') }}"><button class="btn primary">{{ icon('robot',16) }}Start picking</button></form>
+    {% elif t.status == 'picking' %}<form method="post" action="{{ url_for('transfers.act', tid=t.id, action='dispatch') }}"><button class="btn primary">{{ icon('truck',16) }}Dispatch</button></form>
+    {% elif t.status == 'in_transit' %}<form method="post" action="{{ url_for('transfers.act', tid=t.id, action='deliver') }}"><button class="btn primary">{{ icon('check',16) }}Mark delivered</button></form>{% endif %}
+    {% if t.status not in ('delivered','cancelled') %}<form method="post" action="{{ url_for('transfers.act', tid=t.id, action='cancel') }}" data-confirm="Cancel {{ t.code }}?{{ ' Stock already sent will be put back.' if t.status == 'in_transit' }}"><button class="btn danger">Cancel</button></form>{% endif %}
+  </div>
+</div>
+
+<div class="card"><div class="card-b">
+  {% if t.status == 'cancelled' %}<div class="note warn">This transfer was cancelled.</div>{% else %}
+  <div class="steps">
+    {% for k, l, when in [('pending','Created',t.created_at),('picking','Picking',t.picked_at),('in_transit','On the road',t.dispatched_at),('delivered','Delivered',t.delivered_at)] %}
+      <div class="s {{ 'done' if loop.index0 < idx or t.status == 'delivered' else ('now' if loop.index0 == idx) }}"><i>{{ '✓' if loop.index0 < idx or t.status == 'delivered' else loop.index }}</i><span>{{ l }}<br><small>{{ when|when if when else '' }}</small></span></div>
+      {% if not loop.last %}<div class="ln {{ 'done' if loop.index0 < idx }}"></div>{% endif %}
+    {% endfor %}
+  </div>{% endif %}
+</div></div>
+
+<div class="grid g-2-1" style="margin-top:16px">
+  <div class="card">
+    <div class="card-h"><h2>Items</h2><span class="muted" style="font-size:13px">{{ items|length }} lines · {{ items|sum(attribute='qty') }} units</span></div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Product</th><th>Zone / bin</th><th class="num">Send</th><th class="num">Available at source</th></tr></thead>
+      <tbody>{% for i in items %}
+      {% set have = src_qty.get(i.product_id, 0) %}
+      <tr class="{{ 'row-out' if have < i.qty and t.status in ('pending','picking') }}">
+        <td><a href="{{ url_for('inventory.detail', pid=i.product_id) }}">{{ i.name }}</a><span class="sub mono">{{ i.sku }}</span></td>
+        <td>{{ zone(i.zone) }} <span class="mono muted">{{ i.bin }}</span></td>
+        <td class="num"><b>{{ i.qty }}</b> {{ i.unit }}</td>
+        <td class="num">{{ have }}{% if have < i.qty and t.status in ('pending','picking') %}<span class="sub" style="color:var(--clay)">short by {{ i.qty - have }}</span>{% endif %}</td>
+      </tr>{% endfor %}</tbody></table></div>
+  </div>
+  <div class="card"><div class="card-b">
+    <dl class="dl">
+      <dt>From</dt><dd>{{ t.src }}</dd>
+      <dt>To</dt><dd><a href="{{ url_for('shops.detail', sid=t.to_shop_id) }}">{{ t.shop }}</a><br><small class="muted">{{ t.area }} · {{ t.manager or '' }} {{ t.phone or '' }}</small></dd>
+      <dt>Robot</dt><dd>{{ t.robot or 'Assigned when picking starts' }}</dd>
+      <dt>Note</dt><dd>{{ t.note or '—' }}</dd>
+    </dl>
+    <hr><p class="muted" style="font-size:13px;margin:0">Stock leaves the source when you <b>dispatch</b> and reaches the shop when you <b>mark delivered</b>. Cancelling a dispatched transfer puts the stock back.</p>
+  </div></div>
+</div>
+{% endblock %}

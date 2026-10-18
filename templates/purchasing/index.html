@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon, status %}
+{% block title %}Purchasing{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>Purchasing</h1><p>Buying stock from suppliers into the warehouse.</p></div>
+  <div class="actions">
+    <a class="btn" href="{{ url_for('purchasing.suppliers') }}">{{ icon('users',16) }}Suppliers</a>
+    <a class="btn {{ 'soft' if n_reorder }}" href="{{ url_for('purchasing.reorder') }}">{{ icon('sparkle',16) }}Reorder suggestions{% if n_reorder %} <span class="pill warn">{{ n_reorder }}</span>{% endif %}</a>
+    {% if current_user.can('manager') %}<a class="btn primary" href="{{ url_for('purchasing.new') }}">{{ icon('plus',16) }}New purchase order</a>{% endif %}
+  </div>
+</div>
+<div class="card">
+  <div class="card-h"><div class="tabs">
+    <a href="{{ url_for('purchasing.index', status='open') }}" class="{{ 'on' if status == 'open' }}">Open<span class="c">{{ counts.get('draft',0) + counts.get('ordered',0) }}</span></a>
+    {% for k in ['draft','ordered','received','cancelled'] %}<a href="{{ url_for('purchasing.index', status=k) }}" class="{{ 'on' if status == k }}">{{ k|capitalize }}<span class="c">{{ counts.get(k,0) }}</span></a>{% endfor %}
+    <a href="{{ url_for('purchasing.index', status='all') }}" class="{{ 'on' if status == 'all' }}">All</a>
+  </div></div>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Order</th><th>Supplier</th><th class="num">Lines</th><th class="num">Total</th><th>Created</th><th>Expected</th><th>Status</th></tr></thead>
+    <tbody>{% for p in rows %}
+    <tr><td><a href="{{ url_for('purchasing.detail', po_id=p.id) }}"><b>{{ p.code }}</b></a><span class="sub">by {{ p.by_name or '—' }}</span></td>
+      <td>{{ p.supplier }}</td><td class="num">{{ p.lines }}</td><td class="num">{{ (p.total or 0)|inr }}</td>
+      <td>{{ p.created_at|when('%d %b') }}</td>
+      <td>{{ (p.received_at or p.expected_at)|when('%d %b') }}{% if p.status == 'ordered' and p.expected_at and p.expected_at < now.strftime('%Y-%m-%d %H:%M:%S') %} <span class="badge b-urgent plain">Late</span>{% endif %}</td>
+      <td>{{ status(p.status) }}</td></tr>
+    {% else %}<tr><td colspan="7"><div class="empty">{{ icon('cart') }}<div>No purchase orders here.</div></div></td></tr>{% endfor %}
+    </tbody></table></div>
+</div>
+{% endblock %}

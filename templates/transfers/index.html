@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon, status, priority %}
+{% block title %}Transfers{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>Transfers</h1><p>Stock moving from the warehouse (or a shop with spare stock) to the shops that need it.</p></div>
+  <div class="actions">
+    <a class="btn" href="{{ url_for('main.export', kind='transfers') }}">{{ icon('download',16) }}Export</a>
+    <a class="btn" href="{{ url_for('transfers.planner') }}">{{ icon('swap',16) }}Restock planner</a>
+    <a class="btn primary" href="{{ url_for('transfers.new') }}">{{ icon('plus',16) }}New transfer</a>
+  </div>
+</div>
+<div class="card">
+  <div class="card-h" style="flex-wrap:wrap">
+    <div class="tabs">
+      {% set open_n = (counts.get('pending',0) + counts.get('picking',0) + counts.get('in_transit',0)) %}
+      <a href="{{ url_for('transfers.index', status='open', shop=shop) }}" class="{{ 'on' if status == 'open' }}">Open<span class="c">{{ open_n }}</span></a>
+      {% for k, l in statuses %}<a href="{{ url_for('transfers.index', status=k, shop=shop) }}" class="{{ 'on' if status == k }}">{{ l }}<span class="c">{{ counts.get(k,0) }}</span></a>{% endfor %}
+      <a href="{{ url_for('transfers.index', status='all', shop=shop) }}" class="{{ 'on' if status == 'all' }}">All</a>
+    </div>
+    <form class="filters"><input type="hidden" name="status" value="{{ status }}">
+      <select name="shop" onchange="this.form.submit()"><option value="">All shops</option>{% for s in shops %}<option value="{{ s.id }}" {{ 'selected' if s.id|string == shop }}>{{ s.name }}</option>{% endfor %}</select></form>
+  </div>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Transfer</th><th>From → To</th><th>Priority</th><th class="num">Lines</th><th class="num">Units</th><th>Robot</th><th>Created</th><th>Status</th><th></th></tr></thead>
+    <tbody>
+    {% for t in rows %}
+    <tr>
+      <td><a href="{{ url_for('transfers.detail', tid=t.id) }}"><b>{{ t.code }}</b></a><span class="sub">by {{ t.by_name or '—' }}</span></td>
+      <td>{{ t.src }} <span class="muted">→</span> <b style="font-weight:600">{{ t.shop }}</b></td>
+      <td>{{ priority(t.priority) }}</td>
+      <td class="num">{{ t.lines }}</td><td class="num">{{ t.units }}</td>
+      <td>{{ t.robot or '—' }}</td>
+      <td style="white-space:nowrap">{{ t.created_at|ago }}</td>
+      <td>{{ status(t.status) }}</td>
+      <td style="text-align:right">
+        {% if t.status == 'pending' %}<form method="post" action="{{ url_for('transfers.act', tid=t.id, action='pick') }}"><button class="btn sm soft">Start picking</button></form>
+        {% elif t.status == 'picking' %}<form method="post" action="{{ url_for('transfers.act', tid=t.id, action='dispatch') }}"><button class="btn sm soft">Dispatch</button></form>
+        {% elif t.status == 'in_transit' %}<form method="post" action="{{ url_for('transfers.act', tid=t.id, action='deliver') }}"><button class="btn sm soft">Mark delivered</button></form>{% endif %}
+      </td>
+    </tr>
+    {% else %}<tr><td colspan="9"><div class="empty">{{ icon('truck') }}<div>No transfers here. Use the restock planner to see what shops need.</div></div></td></tr>{% endfor %}
+    </tbody></table></div>
+</div>
+{% endblock %}

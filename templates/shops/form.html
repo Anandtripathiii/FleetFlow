@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Add shop' if new else 'Edit shop' }}{% endblock %}
+{% block content %}
+<div class="page-head"><div><div class="crumb"><a href="{{ url_for('shops.index') }}">Shops</a> /</div><h1>{{ 'Add a shop' if new else 'Edit ' ~ s.name }}</h1></div></div>
+<form method="post" class="card" style="max-width:720px">
+  <div class="card-b">
+    <div class="row">
+      <div class="field" style="max-width:180px"><label>Shop code</label><input name="code" required value="{{ s.code or '' }}" placeholder="SH-DWK"></div>
+      <div class="field"><label>Shop name</label><input name="name" required value="{{ s.name or '' }}" placeholder="Dwarka Daily Mart"></div>
+    </div>
+    <div class="row">
+      <div class="field"><label>Area</label><input name="area" value="{{ s.area or '' }}"></div>
+      <div class="field"><label>Nearest warehouse zone</label><select name="zone_id"><option value="">—</option>{% for z in zones %}<option value="{{ z.id }}" {{ 'selected' if s.zone_id|string == z.id|string }}>{{ z.name }}</option>{% endfor %}</select></div>
+    </div>
+    <div class="row">
+      <div class="field"><label>Manager</label><input name="manager" value="{{ s.manager or '' }}"></div>
+      <div class="field"><label>Phone</label><input name="phone" value="{{ s.phone or '' }}"></div>
+    </div>
+    <div class="field"><label>Address</label><textarea name="address">{{ s.address or '' }}</textarea></div>
+  </div>
+  <div class="card-f actions" style="justify-content:flex-end">
+    <a class="btn" href="{{ url_for('shops.index') if new else url_for('shops.detail', sid=s.id) }}">Cancel</a>
+    <button class="btn primary">{{ 'Add shop' if new else 'Save changes' }}</button>
+  </div>
+</form>
+{% endblock %}

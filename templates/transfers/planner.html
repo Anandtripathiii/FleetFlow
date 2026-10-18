@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon, zone %}
+{% block title %}Restock planner{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><div class="crumb"><a href="{{ url_for('transfers.index') }}">Transfers</a> /</div><h1>Restock planner</h1>
+  <p>Every shop shelf below its minimum, with the best place to refill it from. Tick what you want and create the transfers in one go.</p></div>
+</div>
+<div class="note" style="margin-bottom:16px">How it decides: refill each shelf up to <b>2× its minimum</b>, minus anything already on the way. Take it from the <b>warehouse</b> if there is spare stock (we keep a small safety buffer there). If not, take it from <b>another shop</b> that has more than it needs. If nobody has spare, it tells you to reorder from the supplier.</div>
+<form method="post" class="card">
+  <div class="table-wrap"><table>
+    <thead><tr><th style="width:36px"><input type="checkbox" id="all" checked onclick="document.querySelectorAll('.pk:not(:disabled)').forEach(c=>c.checked=this.checked)"></th>
+      <th>Shop</th><th>Product</th><th class="num">On shelf / min</th><th class="num">On the way</th><th>Send from</th><th class="num">Send</th><th>Why</th></tr></thead>
+    <tbody>
+    {% for r in plan %}
+    <tr class="{{ 'row-out' if r.have == 0 else 'row-low' }}">
+      <td><input type="checkbox" class="pk" name="pick" value="{{ loop.index0 }}" {{ 'checked' if r.qty > 0 else 'disabled' }}></td>
+      <td><a href="{{ url_for('shops.detail', sid=r.shop_id) }}">{{ r.shop }}</a></td>
+      <td>{{ r.name }}<span class="sub">{{ zone(r.zone) }} <span class="mono">{{ r.sku }}</span></span></td>
+      <td class="num"><b>{{ r.have }}</b> / {{ r.min }}</td>
+      <td class="num">{{ r.on_way or '—' }}</td>
+      <td>{% if r.qty > 0 %}{% if r.from_id %}<span class="badge b-in_transit plain">{{ r.from }}</span>{% else %}<span class="badge b-ok plain">Warehouse</span>{% endif %}{% else %}<span class="badge b-out plain">Reorder</span>{% endif %}</td>
+      <td class="num"><b>{{ r.qty or '—' }}</b></td>
+      <td class="muted" style="font-size:12.5px;max-width:280px">{{ r.why }}</td>
+    </tr>
+    {% else %}
+    <tr><td colspan="8"><div class="empty">{{ icon('check') }}<div>Every shop is stocked above its minimum. Nothing to send.</div></div></td></tr>
+    {% endfor %}
+    </tbody></table></div>
+  {% if plan %}
+  <div class="card-f actions" style="justify-content:space-between">
+    <span class="muted" style="font-size:13px">Lines going to the same shop from the same place are grouped into one transfer.</span>
+    <span class="actions"><select name="priority" class="inline" style="width:auto"><option value="normal">Normal priority</option><option value="urgent">Urgent</option></select>
+      <a class="btn" href="{{ url_for('purchasing.reorder') }}">Reorder from suppliers</a>
+      <button class="btn primary">{{ icon('truck',16) }}Create transfers</button></span>
+  </div>{% endif %}
+</form>
+{% endblock %}

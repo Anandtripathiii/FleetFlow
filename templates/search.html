@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon, status %}
+{% block title %}Search{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Search</h1><p>{% if term %}Results for “{{ term }}”{% else %}Type in the search box above.{% endif %}</p></div></div>
+<div class="grid g2">
+  <div class="card"><div class="card-h"><h2>Products</h2></div><div class="card-b tight"><table><tbody>
+    {% for p in res.products %}<tr><td><a href="{{ url_for('inventory.detail', pid=p.id) }}">{{ p.name }}</a><span class="sub mono">{{ p.sku }}</span></td><td class="num">{{ p.qty }}</td></tr>{% else %}<tr><td class="empty">No products.</td></tr>{% endfor %}
+  </tbody></table></div></div>
+  <div class="stack">
+    <div class="card"><div class="card-h"><h2>Shops</h2></div><div class="card-b tight"><table><tbody>
+      {% for s in res.shops %}<tr><td><a href="{{ url_for('shops.detail', sid=s.id) }}">{{ s.name }}</a><span class="sub">{{ s.area }}</span></td></tr>{% else %}<tr><td class="empty">No shops.</td></tr>{% endfor %}
+    </tbody></table></div></div>
+    <div class="card"><div class="card-h"><h2>Transfers & orders</h2></div><div class="card-b tight"><table><tbody>
+      {% for t in res.transfers %}<tr><td><a href="{{ url_for('transfers.detail', tid=t.id) }}">{{ t.code }}</a></td><td style="text-align:right">{{ status(t.status) }}</td></tr>{% endfor %}
+      {% for p in res.pos %}<tr><td><a href="{{ url_for('purchasing.detail', po_id=p.id) }}">{{ p.code }}</a></td><td style="text-align:right">{{ status(p.status) }}</td></tr>{% endfor %}
+      {% if not res.transfers and not res.pos %}<tr><td class="empty">Nothing found.</td></tr>{% endif %}
+    </tbody></table></div></div>
+  </div>
+</div>
+{% endblock %}

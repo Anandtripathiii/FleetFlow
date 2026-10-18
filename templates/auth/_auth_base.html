@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}{% endblock %} · {{ APP_NAME }}</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}?v=1">
+<link rel="icon" href="{{ url_for('static', filename='img/mark.svg') }}">
+</head>
+<body>
+<div class="auth">
+  <section class="auth-art">
+    <div class="brand" style="padding:0">
+      <img src="{{ url_for('static', filename='img/mark.svg') }}" width="38" height="38" alt="">
+      <span><span class="brand-name">{{ APP_NAME }}</span><br><span class="brand-sub">Warehouse & fleet</span></span>
+    </div>
+    <div>
+      <h1>Every shelf stocked. Every robot where the orders are.</h1>
+      <p>Track stock across your warehouse and shops, plan what goes where, and let the AI move robots before the rush.</p>
+      <ul class="auth-points">
+        <li><span>✓</span>Live stock in the warehouse and every shop, with low-stock alerts</li>
+        <li><span>✓</span>Restock planner: what to send, from where, to which shop</li>
+        <li><span>✓</span>AI plans robot moves in a digital twin, with live web demand from TinyFish</li>
+      </ul>
+    </div>
+    <svg class="floor-art" viewBox="0 0 360 260" fill="none" aria-hidden="true">
+      <rect x="20" y="30" width="150" height="100" rx="14" fill="#E3F1E6" stroke="#CFE6D3"/>
+      <rect x="190" y="30" width="150" height="100" rx="14" fill="#E4EFF2" stroke="#D3E4E9"/>
+      <rect x="20" y="150" width="150" height="100" rx="14" fill="#F3EEDF" stroke="#E9E0C6"/>
+      <rect x="190" y="150" width="150" height="100" rx="14" fill="#EFEAF5" stroke="#E2DAEE"/>
+      <g fill="#2F6B4B"><circle cx="60" cy="80" r="9"/><circle cx="90" cy="80" r="9"/><circle cx="120" cy="80" r="9"/><circle cx="150" cy="105" r="9" opacity=".55"/></g>
+      <g fill="#2F6F82"><circle cx="235" cy="80" r="9"/><circle cx="265" cy="80" r="9"/></g>
+      <g fill="#8A6A1F"><circle cx="70" cy="200" r="9"/></g><g fill="#5E4E80"><circle cx="250" cy="200" r="9"/></g>
+      <path d="M150 112c10 -18 20 -28 28 -40" stroke="#4E9A6B" stroke-width="2.5" stroke-dasharray="4 5" stroke-linecap="round"/>
+    </svg>
+  </section>
+  <section class="auth-form">
+    <div class="auth-box">
+      {% for cat, msg in get_flashed_messages(with_categories=true) %}
+        <div class="note {{ 'warn' if cat == 'error' }}" style="margin-bottom:14px">{{ msg }}</div>
+      {% endfor %}
+      {% block content %}{% endblock %}
+    </div>
+  </section>
+</div>
+</body>
+</html>

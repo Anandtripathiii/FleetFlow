@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon, status %}
+{% block title %}{{ po.code }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><div class="crumb"><a href="{{ url_for('purchasing.index') }}">Purchasing</a> /</div>
+    <h1>{{ po.code }} {{ status(po.status) }}</h1>
+    <p>{{ po.supplier }} · created {{ po.created_at|when }} by {{ po.by_name or '—' }}</p></div>
+  {% if current_user.can('manager') %}<div class="actions">
+    {% if po.status == 'draft' %}<form method="post" action="{{ url_for('purchasing.act', po_id=po.id, action='order') }}"><button class="btn primary">{{ icon('arrow',16) }}Mark as sent to supplier</button></form>{% endif %}
+    {% if po.status == 'ordered' %}<form method="post" action="{{ url_for('purchasing.act', po_id=po.id, action='receive') }}" data-confirm="Receive all items into the warehouse?"><button class="btn primary">{{ icon('check',16) }}Goods received</button></form>{% endif %}
+    {% if po.status in ('draft','ordered') %}<form method="post" action="{{ url_for('purchasing.act', po_id=po.id, action='cancel') }}" data-confirm="Cancel {{ po.code }}?"><button class="btn danger">Cancel order</button></form>{% endif %}
+  </div>{% endif %}
+</div>
+<div class="grid g-2-1">
+  <div class="card">
+    <div class="card-h"><h2>Items</h2><b>{{ total|inr }}</b></div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Product</th><th class="num">Quantity</th><th class="num">Cost each</th><th class="num">Line total</th><th class="num">Stock now</th></tr></thead>
+      <tbody>{% for i in items %}<tr><td><a href="{{ url_for('inventory.detail', pid=i.product_id) }}">{{ i.name }}</a><span class="sub mono">{{ i.sku }}</span></td>
+        <td class="num"><b>{{ i.qty }}</b> {{ i.unit }}</td><td class="num">{{ i.unit_cost|inr(2) }}</td><td class="num">{{ (i.qty*i.unit_cost)|inr }}</td><td class="num muted">{{ i.stock }}</td></tr>{% endfor %}</tbody>
+    </table></div>
+  </div>
+  <div class="card"><div class="card-b"><dl class="dl">
+    <dt>Supplier</dt><dd>{{ po.supplier }}</dd><dt>Contact</dt><dd>{{ po.contact or '—' }}<br><small class="muted">{{ po.phone or '' }} {{ po.email or '' }}</small></dd>
+    <dt>Expected</dt><dd>{{ po.expected_at|when('%d %b %Y') }}</dd><dt>Received</dt><dd>{{ po.received_at|when if po.received_at else '—' }}</dd>
+    <dt>Note</dt><dd>{{ po.note or '—' }}</dd></dl>
+    <hr><p class="muted" style="font-size:13px;margin:0">Receiving adds every line to warehouse stock, logs it in each product's history and updates the cost price.</p>
+  </div></div>
+</div>
+{% endblock %}

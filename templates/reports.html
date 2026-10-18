@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon %}
+{% block title %}Reports{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>Reports</h1><p>What sells, what sits still, how well each shop is kept stocked, and how hard the robots work.</p></div>
+  <div class="actions">
+    <div class="tabs">{% for d in [7,30,90] %}<a href="{{ url_for('main.reports', days=d) }}" class="{{ 'on' if days == d }}">{{ d }} days</a>{% endfor %}</div>
+  </div>
+</div>
+<div class="grid g2">
+  <div class="card"><div class="card-h"><h2>Top movers</h2><span class="muted" style="font-size:12.5px">units sent to shops</span></div>
+    <div class="table-wrap"><table><thead><tr><th>Product</th><th class="num">Units</th><th class="num">Retail value</th></tr></thead><tbody>
+      {% for r in top %}<tr><td><a href="{{ url_for('inventory.detail', pid=r.id) }}">{{ r.name }}</a><span class="sub">{{ r.category }}</span></td><td class="num"><b>{{ r.units|num }}</b></td><td class="num">{{ r.revenue|inr }}</td></tr>{% else %}<tr><td class="empty" colspan="3">No movement in this period.</td></tr>{% endfor %}
+    </tbody></table></div></div>
+  <div class="card"><div class="card-h"><h2>Slow movers</h2><span class="muted" style="font-size:12.5px">cash tied up on the shelf</span></div>
+    <div class="table-wrap"><table><thead><tr><th>Product</th><th class="num">Sent out</th><th class="num">In stock</th><th class="num">Value</th></tr></thead><tbody>
+      {% for r in slow %}<tr><td><a href="{{ url_for('inventory.detail', pid=r.id) }}">{{ r.name }}</a></td><td class="num">{{ r.units }}</td><td class="num">{{ r.qty }}</td><td class="num">{{ r.value|inr }}</td></tr>{% endfor %}
+    </tbody></table></div></div>
+</div>
+<div class="grid g2" style="margin-top:16px">
+  <div class="card"><div class="card-h"><h2>Shop service</h2><span class="muted" style="font-size:12.5px">fill rate = shelves at or above minimum</span></div>
+    <div class="table-wrap"><table><thead><tr><th>Shop</th><th style="width:140px">Fill rate</th><th class="num">Deliveries</th><th class="num">Avg lead time</th></tr></thead><tbody>
+      {% for s in shops %}{% set fr = (s.ok / s['items'] * 100) if s['items'] else 0 %}
+      <tr><td><a href="{{ url_for('shops.detail', sid=s.id) }}">{{ s.name }}</a></td>
+        <td><div style="display:flex;gap:8px;align-items:center"><div class="bar {{ 'bad' if fr < 60 else ('warn' if fr < 85) }}" style="flex:1"><span style="width:{{ fr }}%"></span></div><span class="num" style="width:36px;font-size:12.5px">{{ fr|int }}%</span></div></td>
+        <td class="num">{{ s.deliveries }}</td><td class="num">{{ '%.1f h'|format(s.lead) if s.lead else '—' }}</td></tr>{% endfor %}
+    </tbody></table></div></div>
+  <div class="card"><div class="card-h"><h2>Stock by category</h2></div>
+    <div class="table-wrap"><table><thead><tr><th>Category</th><th class="num">Products</th><th class="num">Units</th><th class="num">At cost</th><th class="num">At retail</th></tr></thead><tbody>
+      {% for c in cats %}<tr><td>{{ c.category }}</td><td class="num">{{ c.n }}</td><td class="num">{{ c.units|num }}</td><td class="num">{{ c.cost|inr }}</td><td class="num">{{ c.retail|inr }}</td></tr>{% endfor %}
+    </tbody></table></div></div>
+</div>
+<div class="grid g-2-1" style="margin-top:16px">
+  <div class="card"><div class="card-h"><h2>Robot workload</h2></div><div class="card-b"><div class="chart-box" style="height:220px"><canvas id="rb"></canvas></div></div></div>
+  <div class="card"><div class="card-h"><h2>Downloads</h2></div><div class="card-b" style="display:grid;gap:8px">
+    <a class="btn" href="{{ url_for('main.export', kind='stock') }}">{{ icon('download',16) }}Warehouse stock (CSV)</a>
+    <a class="btn" href="{{ url_for('main.export', kind='shop_stock') }}">{{ icon('download',16) }}Shop stock (CSV)</a>
+    <a class="btn" href="{{ url_for('main.export', kind='transfers') }}">{{ icon('download',16) }}Transfers (CSV)</a>
+    <a class="btn" href="{{ url_for('main.export', kind='movements') }}">{{ icon('download',16) }}Full stock history (CSV)</a>
+  </div></div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='vendor/chart.umd.js') }}"></script>
+<script>
+Chart.defaults.font.family='Figtree, system-ui, sans-serif'; Chart.defaults.color='#7A887E';
+const rb={{ robots|map('list')|list|tojson }};
+new Chart(document.getElementById('rb'),{type:'bar',data:{labels:rb.map(r=>r[0]),datasets:[{data:rb.map(r=>r[1]),backgroundColor:'#4E9A6B',borderRadius:5,maxBarThickness:34}]},
+ options:{maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false}},y:{grid:{color:'#EEF2EC'},title:{display:true,text:'jobs done'}}}}});
+</script>
+{% endblock %}

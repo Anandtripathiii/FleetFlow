@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon %}
+{% block title %}Alerts{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Alerts</h1><p>Things that need a decision: stock running out, urgent work not started, robots low on battery, late suppliers and big demand signals.</p></div></div>
+<div class="card" style="max-width:900px">
+  {% if al %}<ul class="alert-list">
+    {% for lvl, msg, link in al %}
+    <li><span class="ic {{ lvl }}">{{ icon('alert' if lvl != 'info' else 'signal', 15) }}</span>
+      <div style="flex:1">{{ msg }}</div><a class="btn sm" href="{{ link }}">Open</a></li>
+    {% endfor %}</ul>
+  {% else %}<div class="empty">{{ icon('check') }}<div>All clear.</div></div>{% endif %}
+</div>
+{% endblock %}

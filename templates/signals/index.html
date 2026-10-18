@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon, zone %}
+{% block title %}Demand signals{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>Demand signals</h1><p>News from outside the warehouse (sales, matches, festivals, weather) that tells us where orders are about to jump. Powered by TinyFish.</p></div>
+  <span class="badge {{ 'b-ok' if has_key else 'b-warn' }} plain">{{ 'TinyFish connected' if has_key else 'TinyFish key not set · demo mode' }}</span>
+</div>
+
+<div class="grid g4">
+  {% for z in zones %}{% set m = effect[z.code] %}
+  <div class="card kpi"><div class="label">{{ zone(z.code) }} {{ z.name.split('·')[-1] }}</div>
+    <div class="value" style="{{ 'color:var(--amber)' if m >= 2 else ('color:var(--g700)' if m > 1.05 else '') }}">x{{ '%.1f'|format(m) }}</div>
+    <div class="sub">{{ 'expected demand vs normal' if m > 1.05 else 'normal demand' }}</div></div>
+  {% endfor %}
+</div>
+
+<div class="grid g-2-1" style="margin-top:16px">
+  <div class="card">
+    <div class="card-h"><h2>Signals</h2><span class="muted" style="font-size:12.5px">{% if last %}last TinyFish check {{ last|ago }}{% else %}not checked yet{% endif %}</span></div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Signal</th><th>Zone</th><th class="num">Demand</th><th>Source</th><th>Valid until</th><th></th></tr></thead>
+      <tbody>{% for s in rows %}
+      {% set live = s.active and (not s.expires_at or s.expires_at > now_s) %}
+      <tr style="{{ 'opacity:.5' if not live }}">
+        <td><b style="font-weight:600">{{ s.title }}</b>{% if s.detail %}<span class="sub">{{ s.detail }}</span>{% endif %}{% if s.url %}<span class="sub"><a href="{{ s.url }}" target="_blank" rel="noopener">source ↗</a></span>{% endif %}</td>
+        <td>{{ zone(s.zone) }}</td>
+        <td class="num"><span class="badge {{ 'b-warn' if s.multiplier >= 2 else 'b-ok' }} plain">x{{ '%.1f'|format(s.multiplier) }}</span></td>
+        <td style="font-size:13px">{{ s.source }}</td>
+        <td style="font-size:13px;white-space:nowrap">{{ s.expires_at|when('%d %b %H:%M') }}</td>
+        <td><form method="post" action="{{ url_for('signals.toggle', sid=s.id) }}"><button class="btn sm">{{ 'Turn off' if s.active else 'Turn on' }}</button></form></td>
+      </tr>{% else %}<tr><td colspan="6"><div class="empty">{{ icon('signal') }}<div>No signals yet. Fetch from the web or add one by hand.</div></div></td></tr>{% endfor %}
+      </tbody></table></div>
+  </div>
+
+  <div class="stack">
+    <form method="post" action="{{ url_for('signals.fetch') }}" class="card">
+      <div class="card-h"><h2>{{ icon('globe',16) }} Check the web</h2></div>
+      <div class="card-b">
+        <div class="field"><label>City</label><input name="city" value="{{ city }}"></div>
+        <p class="muted" style="font-size:13px">TinyFish <b>Search</b> runs {{ queries|length }} searches (sales, events, weather, matches) and we turn each result into a zone + multiplier with clear keyword rules.</p>
+        <button class="btn primary block" {{ 'disabled' if not has_key }}>{{ icon('signal',16) }}Fetch live signals</button>
+        {% if not has_key %}<p class="muted" style="font-size:12.5px;margin-top:8px">{% if current_user.can('admin') %}Add your key in <a href="{{ url_for('main.settings') }}">Settings</a>.{% else %}Ask an admin to add the TinyFish key.{% endif %}</p>{% endif %}
+      </div>
+    </form>
+    <form method="post" action="{{ url_for('signals.add') }}" class="card">
+      <div class="card-h"><h2>Add a signal by hand</h2></div>
+      <div class="card-b">
+        <div class="field"><label>What is happening?</label><input name="title" required placeholder="Diwali sale at Lajpat Nagar market"></div>
+        <div class="row"><div class="field"><label>Zone</label><select name="zone_id">{% for z in zones %}<option value="{{ z.id }}">{{ z.code }} · {{ z.name.split('·')[-1] }}</option>{% endfor %}</select></div>
+          <div class="field"><label>Demand x</label><input type="number" name="multiplier" step="0.1" min="0.5" max="5" value="2"></div>
+          <div class="field"><label>Hours</label><input type="number" name="hours" min="1" max="168" value="24"></div></div>
+        <button class="btn block">Add signal</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="grid g2" style="margin-top:16px">
+  <form method="post" action="{{ url_for('signals.price_check') }}" class="card" id="price">
+    <div class="card-h"><h2>{{ icon('robot',16) }} Supplier price check · TinyFish Web Agent</h2></div>
+    <div class="card-b">
+      <p class="muted" style="font-size:13px">Paste a supplier's product page. The Web Agent opens it like a person, finds the price and stock, and returns clean JSON. Useful before you send a purchase order.</p>
+      <div class="field"><label>Product page link</label><input type="url" name="url" required placeholder="https://supplier.example/product/basmati-5kg"></div>
+      <button class="btn primary" {{ 'disabled' if not has_key }}>Check price</button>
+      {% if checks %}<hr><div class="lbl" style="margin-bottom:6px">Recent checks</div>
+        {% for c in checks %}<div style="font-size:12.5px;padding:6px 0;border-bottom:1px solid var(--line)"><span class="muted">{{ c.created_at|ago }}</span> · {{ c.detail }}</div>{% endfor %}{% endif %}
+    </div>
+  </form>
+  <div class="card">
+    <div class="card-h"><h2>How a web result becomes a signal</h2></div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>If the headline mentions…</th><th>Zone</th><th class="num">Demand</th></tr></thead>
+      <tbody>{% for pat, z, m, why in rules %}
+      <tr><td style="font-size:13px">{{ pat.replace('\\b','').replace('(','').replace(')','').replace('|', ', ') }}<span class="sub">{{ why }}</span></td><td>{{ zone(z) }}</td><td class="num">x{{ m }}</td></tr>
+      {% endfor %}</tbody></table></div>
+  </div>
+</div>
+{% endblock %}

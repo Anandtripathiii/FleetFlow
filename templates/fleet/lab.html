@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon %}
+{% block title %}Simulation lab{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><div class="crumb"><a href="{{ url_for('fleet.index') }}">Robot fleet</a> /</div><h1>Simulation lab</h1>
+  <p>Same warehouse, same orders, same random seed. On the left, fixed rules. On the right, our RL agent. Hit a demand shock and watch who copes.</p></div>
+  <span class="badge {{ 'b-ok' if kind == 'ppo' else 'b-warn' }} plain">{{ 'Agent: trained PPO' if kind == 'ppo' else 'Agent: heuristic (no trained model found)' }}</span>
+</div>
+
+<div class="card">
+  <div class="card-b controls">
+    <div class="field" style="margin:0;min-width:260px"><label>Scenario</label>
+      <select id="sc">{% for k, v in scenarios.items() %}<option value="{{ k }}" {{ 'selected' if k == 'spike' }}>{{ v }}</option>{% endfor %}</select></div>
+    <div class="field" style="margin:0;width:110px"><label>Seed</label><input id="seed" type="number" min="0" max="9999" value="1"></div>
+    <div style="display:flex;gap:8px;align-self:flex-end">
+      <button class="btn primary" id="run">{{ icon('flask',16) }}Run both</button>
+      <button class="btn" id="play" disabled>Pause</button>
+    </div>
+    <div style="align-self:flex-end;display:flex;align-items:center;gap:8px"><span class="lbl">Speed</span><input type="range" id="speed" min="1" max="12" value="4"></div>
+    <div style="margin-left:auto;align-self:flex-end;text-align:right"><div class="lbl">Warehouse clock</div><b id="clock" style="font-size:20px;font-variant-numeric:tabular-nums">00:00</b><span class="muted" id="phase" style="display:block;font-size:12px"></span></div>
+  </div>
+  <div style="padding:0 18px 14px"><input type="range" id="scrub" min="0" max="0" value="0" style="width:100%;accent-color:var(--g700)"></div>
+</div>
+
+<div class="sim-pair" style="margin-top:16px">
+  {% for side, title, sub in [('rules','Basic rules','Robots stay in their home zone'),('rl','Our RL agent','Moves robots using queues, forecast and web signals')] %}
+  <div class="card">
+    <div class="card-h"><div><h2>{{ title }}</h2><div class="muted" style="font-size:12.5px">{{ sub }}</div></div><span class="badge plain" id="{{ side }}-moves">0 moves</span></div>
+    <div class="card-b">
+      <canvas class="sim-canvas" id="cv-{{ side }}" width="960" height="600"></canvas>
+      <div class="sim-metrics">
+        <div><b id="{{ side }}-avg">–</b><span>Avg wait (s)</span></div>
+        <div><b id="{{ side }}-p90">–</b><span>P90 wait (s)</span></div>
+        <div><b id="{{ side }}-served">–</b><span>Orders served</span></div>
+        <div><b id="{{ side }}-idle">–</b><span>Robot idle %</span></div>
+      </div>
+    </div>
+  </div>{% endfor %}
+</div>
+
+<div class="grid g-2-1" style="margin-top:16px">
+  <div class="card">
+    <div class="card-h"><h2>Average wait over time</h2><div class="legend"><span><i style="background:#C9A36A"></i>Rules</span><span><i style="background:#2F6B4B"></i>RL agent</span><span><i style="background:#E7D6EE"></i>Demand (orders/min)</span></div></div>
+    <div class="card-b"><div class="chart-box" style="height:260px"><canvas id="chart"></canvas></div></div>
+  </div>
+  <div class="card">
+    <div class="card-h"><h2>Agent decisions</h2><span class="muted" style="font-size:12.5px">why it moved each robot</span></div>
+    <div class="log" id="log"><div class="muted">Run a scenario to see the agent's moves.</div></div>
+  </div>
+</div>
+
+<div class="card" style="margin-top:16px" id="verdict-card" hidden>
+  <div class="card-b" id="verdict" style="font-size:15px"></div>
+</div>
+
+{% if ev %}
+<div class="card" style="margin-top:16px">
+  <div class="card-h"><h2>Benchmark · 10 unseen seeds per scenario</h2><span class="muted" style="font-size:12.5px">average wait time, lower is better</span></div>
+  <div class="card-b"><div class="compare">
+    {% for k, v in ev.items() %}
+    <div><div class="t">{{ k }}</div><div class="v {{ 'neg' if v.better_pct < 0 }}">{{ '%+.0f'|format(v.better_pct) }}%</div>
+      <div class="muted" style="font-size:12px">rules {{ v.rules|int }} s → agent {{ v.rl|int }} s</div>
+      {% if v.heuristic %}<div class="muted" style="font-size:11.5px">simple heuristic {{ v.heuristic|int }} s</div>{% endif %}</div>
+    {% endfor %}
+  </div>
+  <p class="muted" style="font-size:12.5px;margin:12px 0 0">Positive = the agent cut average waiting time vs. the basic rules. The agent never saw these seeds during training. The simple heuristic is a hand-written rule we also test, to keep the comparison honest.</p></div>
+</div>
+{% endif %}
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='vendor/chart.umd.js') }}"></script>
+<script>window.SIM_API = "{{ url_for('fleet.api_sim') }}";</script>
+<script src="{{ url_for('static', filename='js/lab.js') }}?v=1"></script>
+{% endblock %}

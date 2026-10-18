@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon, status, priority, zone %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+{% set hour = now.hour %}
+<div class="page-head">
+  <div>
+    <h1>{{ 'Good morning' if hour < 12 else ('Good afternoon' if hour < 17 else 'Good evening') }}, {{ current_user.name.split()[0] }}</h1>
+    <p>{{ now.strftime('%A, %d %B') }} · here is how the warehouse and shops look right now.</p>
+  </div>
+  <div class="actions">
+    <a class="btn" href="{{ url_for('transfers.planner') }}">{{ icon('swap',16) }}Restock planner</a>
+    <a class="btn primary" href="{{ url_for('fleet.index') }}">{{ icon('robot',16) }}Rebalance robots</a>
+  </div>
+</div>
+
+<div class="grid g4">
+  <div class="card kpi accent">
+    <div class="label">Warehouse stock value</div>
+    <div class="value">{{ k.value|inr }}</div>
+    <div class="sub">{{ k.units|num }} units · {{ k.skus }} products</div>
+  </div>
+  <a class="card kpi" href="{{ url_for('inventory.index', view='low') }}" style="color:inherit;text-decoration:none">
+    <span class="kpi-ico {{ 'warn' if k.low }}">{{ icon('box',16) }}</span>
+    <div class="label">Low stock in warehouse</div>
+    <div class="value">{{ k.low }}</div>
+    <div class="sub">{{ k.shop_low }} shop shelves below minimum</div>
+  </a>
+  <a class="card kpi" href="{{ url_for('transfers.index') }}" style="color:inherit;text-decoration:none">
+    <span class="kpi-ico {{ 'bad' if k.urgent }}">{{ icon('truck',16) }}</span>
+    <div class="label">Open transfers</div>
+    <div class="value">{{ k.open_tr }}</div>
+    <div class="sub">{% if k.urgent %}<span style="color:var(--clay);font-weight:600">{{ k.urgent }} urgent</span> · {% endif %}avg delivery {{ k.lead_h }} h</div>
+  </a>
+  <a class="card kpi" href="{{ url_for('fleet.index') }}" style="color:inherit;text-decoration:none">
+    <span class="kpi-ico">{{ icon('robot',16) }}</span>
+    <div class="label">Robots picking now</div>
+    <div class="value">{{ k.robots_active }} <span style="font-size:15px;color:var(--muted);font-weight:500">of {{ k.robots_ok }}</span></div>
+    <div class="sub">{{ k.delivered_7d }} deliveries in the last 7 days</div>
+  </a>
+</div>
+
+<div class="grid g-2-1" style="margin-top:16px">
+  <div class="card">
+    <div class="card-h"><h2>Stock in and out · last 14 days</h2>
+      <div class="legend"><span><i style="background:#4E9A6B"></i>Sent to shops</span><span><i style="background:#CFE6D3"></i>Received</span></div></div>
+    <div class="card-b"><div class="chart-box"><canvas id="flow"></canvas></div></div>
+  </div>
+  <div class="card">
+    <div class="card-h"><h2>Needs attention</h2><a href="{{ url_for('main.alerts_page') }}" style="font-size:13px">All alerts</a></div>
+    {% if al %}
+    <ul class="alert-list">
+      {% for lvl, msg, link in al[:6] %}
+      <li><span class="ic {{ lvl }}">{{ icon('alert' if lvl != 'info' else 'signal', 15) }}</span><a href="{{ link }}" style="color:var(--ink)">{{ msg }}</a></li>
+      {% endfor %}
+    </ul>
+    {% else %}<div class="empty">{{ icon('check') }}<div>All clear. Nothing needs you right now.</div></div>{% endif %}
+  </div>
+</div>
+
+<div class="grid g3" style="margin-top:16px">
+  <div class="card">
+    <div class="card-h"><h2>Open transfers</h2><a href="{{ url_for('transfers.index') }}" style="font-size:13px">View all</a></div>
+    <div class="card-b tight"><table><tbody>
+      {% for t in open_tr %}
+      <tr><td><a href="{{ url_for('transfers.detail', tid=t.id) }}"><b>{{ t.code }}</b></a><span class="sub">{{ t.shop }} · {{ t.lines }} lines</span></td>
+          <td>{{ priority(t.priority) }}</td><td style="text-align:right">{{ status(t.status) }}</td></tr>
+      {% else %}<tr><td class="empty">No open transfers.</td></tr>{% endfor %}
+    </tbody></table></div>
+  </div>
+  <div class="card">
+    <div class="card-h"><h2>Running low</h2><a href="{{ url_for('purchasing.reorder') }}" style="font-size:13px">Reorder</a></div>
+    <div class="card-b tight"><table><tbody>
+      {% for p in low %}
+      <tr class="{{ 'row-out' if p.qty == 0 else 'row-low' }}"><td><a href="{{ url_for('inventory.detail', pid=p.id) }}">{{ p.name }}</a><span class="sub">{{ p.sku }}</span></td>
+          <td class="num"><b>{{ p.qty }}</b><span class="sub">min {{ p.reorder_level }}</span></td></tr>
+      {% else %}<tr><td class="empty">Everything is above reorder level.</td></tr>{% endfor %}
+    </tbody></table></div>
+  </div>
+  <div class="card">
+    <div class="card-h"><h2>Zone pressure</h2><a href="{{ url_for('fleet.index') }}" style="font-size:13px">Fleet</a></div>
+    <div class="card-b tight"><table>
+      <thead><tr><th>Zone</th><th class="num">Open lines</th><th class="num">Robots</th><th class="num">Web signal</th></tr></thead>
+      <tbody>
+      {% for z in pr.zones %}
+      {% set c = z.code %}
+      <tr><td style="white-space:nowrap">{{ zone(c) }} <span style="margin-left:4px">{{ z.name.split('·')[-1] }}</span></td>
+          <td class="num"><b>{{ pr.queue[c] }}</b></td><td class="num">{{ pr.robots[c] }}</td>
+          <td class="num">{% if pr.signal[c] > 1.05 %}<span class="badge b-warn plain">x{{ '%.1f'|format(pr.signal[c]) }}</span>{% else %}<span class="muted">–</span>{% endif %}</td></tr>
+      {% endfor %}
+      </tbody></table></div>
+  </div>
+</div>
+
+<div class="grid g-2-1" style="margin-top:16px">
+  <div class="card">
+    <div class="card-h"><h2>Stock value by category</h2></div>
+    <div class="card-b"><div class="chart-box" style="height:220px"><canvas id="cats"></canvas></div></div>
+  </div>
+  <div class="card">
+    <div class="card-h"><h2>Recent activity</h2><a href="{{ url_for('main.activity') }}" style="font-size:13px">Log</a></div>
+    <div class="card-b tight"><table><tbody>
+      {% for a in acts %}<tr><td>{{ a.action }}<span class="sub">{{ a.name or 'System' }}{% if a.detail %} · {{ a.detail[:40] }}{% endif %}</span></td><td class="num muted" style="font-size:12.5px;white-space:nowrap">{{ a.created_at|ago }}</td></tr>{% endfor %}
+    </tbody></table></div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='vendor/chart.umd.js') }}"></script>
+<script>
+Chart.defaults.font.family = 'Figtree, system-ui, sans-serif'; Chart.defaults.color = '#7A887E';
+const flow = {{ flow|tojson }};
+new Chart(document.getElementById('flow'), {type:'bar', data:{labels:flow.labels, datasets:[
+  {label:'Sent to shops', data:flow.out, backgroundColor:'#4E9A6B', borderRadius:4, maxBarThickness:22},
+  {label:'Received', data:flow.in, backgroundColor:'#CFE6D3', borderRadius:4, maxBarThickness:22}]},
+  options:{maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{x:{grid:{display:false}}, y:{grid:{color:'#EEF2EC'}, beginAtZero:true}}}});
+const cats = {{ by_cat|map('list')|list|tojson }};
+new Chart(document.getElementById('cats'), {type:'bar', data:{labels:cats.map(c=>c[0]), datasets:[{data:cats.map(c=>Math.round(c[1])),
+  backgroundColor:['#2F6B4B','#3B7F59','#4E9A6B','#6FB085','#9CCAA8','#BCDDC4','#CFE6D3','#E0EEE2'], borderRadius:5}]},
+  options:{indexAxis:'y', maintainAspectRatio:false, plugins:{legend:{display:false}, tooltip:{callbacks:{label:c=>'₹'+c.raw.toLocaleString('en-IN')}}},
+  scales:{x:{grid:{color:'#EEF2EC'}, ticks:{callback:v=>'₹'+(v>=1000?(v/1000)+'k':v)}}, y:{grid:{display:false}}}}});
+</script>
+{% endblock %}
