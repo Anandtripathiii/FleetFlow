@@ -9,8 +9,8 @@
 @font-face{font-family:"Instrument Serif";font-style:italic;font-weight:400;font-display:swap;src:url(../fonts/instrument-serif-latin-400-italic.woff2) format("woff2")}
 
 /* Every colour is light-dark(light, dark). The <head> script sets data-theme before paint;
-   without JS the system setting decides. */
-:root{color-scheme:light dark}
+   dark is the default, also without JS. */
+:root{color-scheme:dark}
 :root[data-theme=light]{color-scheme:light}
 :root[data-theme=dark]{color-scheme:dark}
 :root{

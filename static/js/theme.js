@@ -54,11 +54,4 @@
     const btn = e.target.closest('[data-theme-toggle]');
     if (btn) toggleTheme(btn);
   });
-
-  // Follow the system setting until the user picks a theme themselves.
-  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
-    let saved = null;
-    try { saved = localStorage.getItem('ff-theme'); } catch (err) {}
-    if (!saved) { root.dataset.theme = e.matches ? 'dark' : 'light'; dispatchEvent(new Event('themechange')); }
-  });
 })();
