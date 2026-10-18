@@ -3,7 +3,6 @@ services:
     name: fleetflow
     runtime: python
     plan: free
-    region: singapore
     buildCommand: pip install -r requirements.txt
     startCommand: gunicorn app:app --preload --workers 2 --threads 4 --timeout 120 --bind 0.0.0.0:$PORT
     healthCheckPath: /healthz
