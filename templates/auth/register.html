@@ -1,8 +1,9 @@
 {% extends "auth/_auth_base.html" %}
 {% block title %}Create account{% endblock %}
-{% block content %}
-<h2>Create your account</h2>
-<p class="muted" style="margin-bottom:22px">New accounts start as <b>staff</b>. An admin can give you manager access.</p>
+{% block eyebrow %}Create account{% endblock %}
+{% block heading %}Join the <em>floor.</em>{% endblock %}
+{% block intro %}New accounts start as <b>staff</b>. An admin can give you manager access.{% endblock %}
+{% block form %}
 <form method="post">
   <div class="field"><label for="name">Full name</label><input id="name" type="text" name="name" required value="{{ form.get('name','') }}"></div>
   <div class="field"><label for="email">Work email</label><input id="email" type="email" name="email" required value="{{ form.get('email','') }}"></div>
@@ -10,7 +11,7 @@
     <div class="field"><label for="password">Password</label><input id="password" type="password" name="password" minlength="6" required></div>
     <div class="field"><label for="confirm">Confirm</label><input id="confirm" type="password" name="confirm" minlength="6" required></div>
   </div>
-  <button class="btn primary block" type="submit">Create account</button>
+  <button class="btn primary block lg" type="submit">Create account</button>
 </form>
-<p style="margin-top:16px;font-size:14px" class="muted">Already have one? <a href="{{ url_for('auth.login') }}">Log in</a></p>
 {% endblock %}
+{% block after %}<p class="auth-alt">Already have one? <a href="{{ url_for('auth.login') }}">Log in</a></p>{% endblock %}

@@ -1,64 +1,17 @@
-<!doctype html>
-<html lang="en">
-<head>
-{% include "_head.html" %}
-<title>{% block title %}{% endblock %} · {{ APP_NAME }}</title>
-</head>
-<body>
-<div class="auth">
-  <section class="auth-art">
-    <div class="brand" style="padding:0;position:relative;z-index:1">
-      <img src="{{ url_for('static', filename='img/mark.svg') }}" width="40" height="40" alt="">
-      <span><span class="brand-name" style="font-size:19px">{{ APP_NAME }}</span><br><span class="brand-sub">Warehouse & fleet</span></span>
-    </div>
-
-    <div class="hero">
-      <h1 class="big">WHAT WE <span class="hi">DO</span></h1>
-      <div class="shelf">
-        <div class="pop">
-          <h3>TRACK</h3>
-          <p>Every unit in the warehouse and on every shop shelf, with live low-stock alerts.</p>
-        </div>
-        <div class="pop">
-          <h3>PLAN</h3>
-          <p>The restock planner tells you what to send, from where, to which shop.</p>
-        </div>
-        <div class="pop">
-          <h3>MOVE</h3>
-          <p>AI shifts robots to the busy zones before orders pile up, using live web demand.</p>
-        </div>
-      </div>
-    </div>
-
-    <div class="hero">
-      <h1 class="big">LIVE <span class="hi">PROOF</span></h1>
-      <div class="shelf two">
-        <div class="pop stat">
-          <div class="num"><b>47%</b><span>LESS WAIT</span></div>
-          <div>
-            <h3>ON A NORMAL DAY</h3>
-            <p>The AI agent vs basic rules, measured on 10 days it has never seen.</p>
-          </div>
-        </div>
-        <div class="pop stat">
-          <div class="num"><b>33%</b><span>LESS WAIT</span></div>
-          <div>
-            <h3>EVENING RUSH</h3>
-            <p>Shifts robots across zones as the sales floor heats up.</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <section class="auth-form">
-    <div class="auth-box">
-      {% for cat, msg in get_flashed_messages(with_categories=true) %}
-        <div class="note {{ 'warn' if cat == 'error' }}" style="margin-bottom:14px">{{ msg }}</div>
-      {% endfor %}
-      {% block content %}{% endblock %}
-    </div>
-  </section>
-</div>
-</body>
-</html>
+{% extends "_public_base.html" %}
+{% block content %}
+<section class="auth-page">
+  <div class="auth-head">
+    <span class="eyebrow">{% block eyebrow %}{% endblock %}</span>
+    <h1 class="display">{% block heading %}{% endblock %}</h1>
+    <p>{% block intro %}{% endblock %}</p>
+  </div>
+  <div class="auth-box">
+    {% for cat, msg in get_flashed_messages(with_categories=true) %}
+      <div class="note {{ 'warn' if cat == 'error' }}" role="status">{{ msg }}</div>
+    {% endfor %}
+    {% block form %}{% endblock %}
+  </div>
+  {% block after %}{% endblock %}
+</section>
+{% endblock %}

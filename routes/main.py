@@ -18,6 +18,8 @@ from core.authz import role_required as _role
 
 @bp.route("/")
 def dashboard():
+    if not current_user.is_authenticated:
+        return render_template("landing.html")
     con = get_db()
     k = kpis(con)
     days = [(datetime.now() - timedelta(days=i)).strftime("%Y-%m-%d") for i in range(13, -1, -1)]
@@ -37,6 +39,11 @@ def dashboard():
     acts = con.execute("""SELECT a.*, u.name FROM activity a LEFT JOIN users u ON u.id=a.user_id ORDER BY a.id DESC LIMIT 7""").fetchall()
     return render_template("dashboard.html", k=k, flow=flow, by_cat=by_cat, open_tr=open_tr, low=low, pr=pr,
                            acts=acts, al=alerts(con))
+
+
+@bp.route("/about")
+def about():
+    return render_template("landing.html")
 
 
 @bp.route("/alerts")

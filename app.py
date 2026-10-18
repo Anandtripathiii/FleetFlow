@@ -52,7 +52,8 @@ def create_app():
     @app.before_request
     def require_login():
         open_paths = ("/login", "/register", "/static/", "/healthz")
-        if not current_user.is_authenticated and not request.path.startswith(open_paths):
+        public_pages = ("/", "/about")         # landing page
+        if not current_user.is_authenticated and not request.path.startswith(open_paths) and request.path not in public_pages:
             return redirect(url_for("auth.login", next=request.path))
 
     @app.get("/healthz")

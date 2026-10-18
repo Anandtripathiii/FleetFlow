@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="en">
+<head>
+{% include "_head.html" %}
+<title>{% block title %}{% endblock %} · {{ APP_NAME }}</title>
+<meta name="description" content="FleetFlow: warehouse stock, shop restocking and AI robot rebalancing in one app.">
+</head>
+<body class="public">
+<main id="main" class="frame">
+{% block content %}{% endblock %}
+</main>
+{% block scripts %}{% endblock %}
+</body>
+</html>

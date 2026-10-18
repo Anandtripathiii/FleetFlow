@@ -1,0 +1,180 @@
+{% extends "_public_base.html" %}
+{% from "_macros.html" import icon %}
+{% block title %}Warehouse stock, shops and robots{% endblock %}
+{% block content %}
+<section class="hero">
+  <span class="eyebrow">4 zones · 10 robots · 6 shops · one app</span>
+  <h1>The warehouse that thinks <em>ahead.</em></h1>
+  <p class="lead">FleetFlow tracks every unit in the warehouse and on every shop shelf, tells you what each shop needs and where to send it from, and moves picking robots to the zones where orders are about to pile up.</p>
+  <p class="motto">Track it. Plan it. Move it.</p>
+  <div class="hero-ctas">
+    {% if current_user.is_authenticated %}
+    <a class="btn primary lg" href="{{ url_for('main.dashboard') }}">Open the dashboard</a>
+    {% else %}
+    <a class="btn primary lg" href="{{ url_for('auth.login') }}">Log in</a>
+    {% endif %}
+    <a class="btn lg" href="#how">How the AI works</a>
+    <a class="btn lg" href="#run">Run it yourself</a>
+  </div>
+</section>
+
+<section class="section" id="features">
+  <div class="section-head" data-reveal>
+    <div>
+      <span class="eyebrow">What it does</span>
+      <h2>Stock, shops and robots in one place.</h2>
+    </div>
+    <p>From the shelf count to the robot on the floor, every part of the job is one click from the next.</p>
+  </div>
+  <div class="hairgrid bento">
+    <article class="cell big" data-reveal>
+      {{ icon('robot', 22) }}
+      <span class="eyebrow">Robot fleet</span>
+      <p>Live floor map, battery, jobs, maintenance and manual moves. AI advice is checked in a digital twin before you see it, so it never suggests a move that makes waiting worse.</p>
+      <figure class="mini-floor" aria-hidden="true">
+        <div class="zones">
+          <div class="z hot"><b>ZONE A · BUSY</b><div class="bots"><i></i><i class="b"></i><i class="go"></i></div><div class="q">{% for _ in range(14) %}<span></span>{% endfor %}</div></div>
+          <div class="z"><b>ZONE B</b><div class="bots"><i></i><i class="b"></i><i></i></div><div class="q">{% for _ in range(4) %}<span></span>{% endfor %}</div></div>
+          <div class="z"><b>ZONE C</b><div class="bots"><i></i><i class="b"></i></div><div class="q">{% for _ in range(2) %}<span></span>{% endfor %}</div></div>
+          <div class="z"><b>ZONE D</b><div class="bots"><i></i><i></i></div><div class="q"><span></span></div></div>
+        </div>
+        <figcaption>Advice: <b>move one robot from Zone D to Zone A</b></figcaption>
+      </figure>
+    </article>
+    <article class="cell" data-reveal>
+      {{ icon('box', 22) }}
+      <span class="eyebrow">Inventory</span>
+      <p>Every product with zone, bin, stock, reorder level, cost and value. Stock in and out, shelf counts, full history, CSV import and export.</p>
+    </article>
+    <article class="cell" data-reveal>
+      {{ icon('store', 22) }}
+      <span class="eyebrow">Shops</span>
+      <p>Shelf stock per shop, minimum levels, sales and counts, and shelf health at a glance.</p>
+    </article>
+    <article class="cell" data-reveal>
+      {{ icon('truck', 22) }}
+      <span class="eyebrow">Transfers</span>
+      <p>Warehouse to shop or shop to shop: pending, picking, on the road, delivered. Printable pick lists sorted by zone and bin.</p>
+    </article>
+    <article class="cell" data-reveal>
+      {{ icon('swap', 22) }}
+      <span class="eyebrow">Restock planner</span>
+      <p>Every shelf below minimum, with where to send from and why. One click creates the transfers.</p>
+    </article>
+    <article class="cell wide" data-reveal>
+      {{ icon('flask', 22) }}
+      <span class="eyebrow">Simulation lab</span>
+      <p>Fixed rules and the RL agent side by side on the same demand shock, animated, with a reason for every robot move.</p>
+    </article>
+    <article class="cell wide" data-reveal>
+      {{ icon('signal', 22) }}
+      <span class="eyebrow">Demand signals</span>
+      <p>TinyFish Search turns web news about sales, matches, festivals and weather into a demand multiplier per zone. TinyFish Web Agent checks supplier prices from a product page.</p>
+    </article>
+    <article class="cell" data-reveal>
+      {{ icon('cart', 22) }}
+      <span class="eyebrow">Purchasing</span>
+      <p>Suppliers, purchase orders, reorder suggestions, and real versus promised lead time.</p>
+    </article>
+    <article class="cell" data-reveal>
+      {{ icon('chart', 22) }}
+      <span class="eyebrow">Reports</span>
+      <p>Top and slow movers, shop fill rate, stock by category and robot workload, with CSV downloads.</p>
+    </article>
+    <article class="cell" data-reveal>
+      {{ icon('bell', 22) }}
+      <span class="eyebrow">Alerts &amp; log</span>
+      <p>Out of stock, urgent work, low battery, late suppliers and big demand signals. Every action is logged.</p>
+    </article>
+    <article class="cell" data-reveal>
+      {{ icon('users', 22) }}
+      <span class="eyebrow">Roles</span>
+      <p>Email and password login with hashed passwords, and three roles: staff, manager and admin.</p>
+    </article>
+  </div>
+</section>
+
+<section class="section" id="how">
+  <div class="section-head" data-reveal>
+    <div>
+      <span class="eyebrow">How the AI works</span>
+      <h2>Tested in a twin before it reaches the floor.</h2>
+    </div>
+    <p>A trained agent plus a planner that tries every move first. Nothing reaches you unless it cuts predicted waiting time.</p>
+  </div>
+  <div class="hairgrid how">
+    <div data-reveal><span class="n">STEP 1</span><h3>Digital twin</h3><p>A simulator of the warehouse floor: 4 zones, 10 robots, one tick per second, orders arriving at random. A robot handles 2 orders a minute and needs 40 s to drive to another zone.</p></div>
+    <div data-reveal><span class="n">STEP 2</span><h3>Baseline rules</h3><p>Each robot stays in its home zone and takes the next order there. This is what the agent has to beat.</p></div>
+    <div data-reveal><span class="n">STEP 3</span><h3>RL agent</h3><p>Every 10 s the PPO agent reads queue, robots, last-minute demand and web signal for each zone, then moves one robot or waits. Every zone always keeps at least one robot.</p></div>
+    <div data-reveal><span class="n">STEP 4</span><h3>Training</h3><p>1.5 million decisions on random days with surprise spikes, robot failures and rush hours. We keep the checkpoint that does best on held-out days.</p></div>
+    <div data-reveal><span class="n">STEP 5</span><h3>Live advice</h3><p>The fleet page copies today's floor into the twin, tries every possible robot move, plays the next 15 minutes for each and keeps the best one to three.</p></div>
+    <div data-reveal><span class="n">STEP 6</span><h3>Runs anywhere</h3><p>The trained network runs with numpy only, so the web app deploys without PyTorch.</p></div>
+  </div>
+</section>
+
+<section class="section" id="results">
+  <div class="section-head" data-reveal>
+    <div>
+      <span class="eyebrow">Results</span>
+      <h2>Measured on days it has never seen.</h2>
+    </div>
+    <p>Average wait in seconds over 10 unseen seeds per scenario. Lower is better.</p>
+  </div>
+  <div class="results" data-reveal>
+    <table>
+      <thead><tr><th>Scenario</th><th class="num">Basic rules</th><th class="num">RL agent</th><th class="num">Better than rules</th><th class="num">Simple heuristic</th></tr></thead>
+      <tbody>
+        {% for name, rules, rl, pct, heur in [
+          ('Normal day', 47, 25, 47, 23),
+          ('Flash sale (Zone A ×5)', 335, 256, 23, 253),
+          ('Moving hotspot', 319, 264, 17, 256),
+          ('Evening rush', 232, 154, 33, 142),
+          ('2 robots break down', 377, 322, 15, 321),
+          ('Mixed day (random busy zones)', 236, 253, -7, 89)] %}
+        <tr><td>{{ name }}</td><td class="num">{{ rules }}</td><td class="num">{{ rl }}</td>
+            <td class="num {{ 'gain' if pct > 0 else 'loss' }}">{{ ('−' ~ (-pct)) if pct < 0 else pct }}%</td><td class="num">{{ heur }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="honest" data-reveal>
+    <p><b>The honest part.</b> The agent clearly beats the basic rules on every standard scenario and roughly matches a hand-tuned heuristic. It struggles when the busy zones are shuffled, because it never saw that during training.</p>
+    <p>That is why live advice uses the digital-twin planner, which tests every move and never suggests one that makes things worse. Next step: train longer with random busy zones.</p>
+  </div>
+</section>
+
+<section class="section" id="run">
+  <div class="section-head" data-reveal>
+    <div>
+      <span class="eyebrow">Run it</span>
+      <h2>Up and running in five minutes.</h2>
+    </div>
+    <p>Demo data loads on the first run. Chart.js and the fonts are bundled, so it works offline.</p>
+  </div>
+  <div class="run">
+    <div data-reveal>
+      <h3>On your laptop</h3>
+<pre class="code"><span class="p">$ </span>python -m venv venv
+<span class="p">$ </span>venv\Scripts\activate   <span class="c"># Mac/Linux: source venv/bin/activate</span>
+<span class="p">$ </span>pip install -r requirements.txt
+<span class="p">$ </span>python app.py
+<span class="c"># open http://127.0.0.1:5000</span></pre>
+      <p class="after">To use live demand signals, set <code>TINYFISH_API_KEY</code> before starting, or paste the key in <b>Settings</b> as admin. Without a key the app keeps working with saved and manual signals.</p>
+    </div>
+    <div data-reveal>
+      <h3>Demo accounts</h3>
+      <div class="accounts table-wrap">
+        <table>
+          <thead><tr><th>Role</th><th>Email</th><th>Password</th></tr></thead>
+          <tbody>
+            <tr><td>Admin</td><td class="mono">admin@fleetflow.in</td><td class="mono">admin123</td></tr>
+            <tr><td>Manager</td><td class="mono">manager@fleetflow.in</td><td class="mono">manager123</td></tr>
+            <tr><td>Staff</td><td class="mono">staff@fleetflow.in</td><td class="mono">staff123</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="after"><a class="btn primary" href="{{ url_for('auth.login') }}">Try a demo account {{ icon('arrow', 16) }}</a></p>
+    </div>
+  </div>
+</section>
+{% endblock %}

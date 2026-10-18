@@ -1,22 +1,31 @@
 {% extends "auth/_auth_base.html" %}
 {% block title %}Log in{% endblock %}
-{% block content %}
-<h2>Welcome back</h2>
-<p class="muted" style="margin-bottom:22px">Log in to manage stock, shops and robots.</p>
+{% block eyebrow %}Log in{% endblock %}
+{% block heading %}Welcome <em>back.</em>{% endblock %}
+{% block intro %}Log in to manage stock, shops and robots.{% endblock %}
+{% block form %}
 <form method="post" autocomplete="on">
   <div class="field"><label for="email">Email</label><input id="email" type="email" name="email" required autofocus value="{{ request.form.get('email','') }}"></div>
   <div class="field"><label for="password">Password</label><input id="password" type="password" name="password" required></div>
-  <label class="check" style="margin:-2px 0 16px"><input type="checkbox" name="remember" checked> Keep me logged in</label>
-  <button class="btn primary block" type="submit">Log in</button>
+  <label class="check" style="margin:-2px 0 18px"><input type="checkbox" name="remember" checked> Keep me logged in</label>
+  <button class="btn primary block lg" type="submit">Log in</button>
 </form>
-{% if allow_signup %}<p style="margin-top:16px;font-size:14px" class="muted">New here? <a href="{{ url_for('auth.register') }}">Create an account</a></p>{% endif %}
-<div class="demo-logins" title="Click to fill">
-  <div style="background:var(--surface-2);cursor:default"><b style="font-size:12px;color:var(--muted)">DEMO ACCOUNTS · click to fill</b></div>
-  <div data-e="admin@fleetflow.in" data-p="admin123"><span>Admin</span><span class="mono">admin@fleetflow.in</span></div>
-  <div data-e="manager@fleetflow.in" data-p="manager123"><span>Manager</span><span class="mono">manager@fleetflow.in</span></div>
-  <div data-e="staff@fleetflow.in" data-p="staff123"><span>Staff</span><span class="mono">staff@fleetflow.in</span></div>
+<div class="demo-logins">
+  <div>Demo accounts · click to fill</div>
+  <button type="button" data-e="admin@fleetflow.in" data-p="admin123"><span>Admin</span><span class="mono">admin@fleetflow.in</span></button>
+  <button type="button" data-e="manager@fleetflow.in" data-p="manager123"><span>Manager</span><span class="mono">manager@fleetflow.in</span></button>
+  <button type="button" data-e="staff@fleetflow.in" data-p="staff123"><span>Staff</span><span class="mono">staff@fleetflow.in</span></button>
 </div>
+{% endblock %}
+{% block after %}
+{% if allow_signup %}<p class="auth-alt">New here? <a href="{{ url_for('auth.register') }}">Create an account</a></p>{% endif %}
+{% endblock %}
+{% block scripts %}
 <script>
-document.querySelectorAll('.demo-logins [data-e]').forEach(d=>d.onclick=()=>{email.value=d.dataset.e;password.value=d.dataset.p;password.focus()});
+document.querySelectorAll('.demo-logins [data-e]').forEach(d => d.onclick = () => {
+  document.getElementById('email').value = d.dataset.e;
+  document.getElementById('password').value = d.dataset.p;
+  document.getElementById('password').focus();
+});
 </script>
 {% endblock %}
