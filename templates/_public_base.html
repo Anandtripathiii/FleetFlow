@@ -13,5 +13,8 @@
 </main>
 {% include "_footer.html" %}
 {% block scripts %}{% endblock %}
+<script src="{{ url_for('static', filename='vendor/gsap.min.js') }}" defer></script>
+<script src="{{ url_for('static', filename='vendor/ScrollTrigger.min.js') }}" defer></script>
+<script src="{{ url_for('static', filename='js/motion.js') }}?v=4" defer></script>
 </body>
 </html>

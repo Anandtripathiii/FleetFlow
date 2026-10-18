@@ -472,3 +472,34 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
   .hero-ctas .btn{flex:1 1 100%}
 }
 @media (max-width:560px){.top .btn.soft{display:none}.g4{grid-template-columns:1fr 1fr}.sim-metrics{grid-template-columns:1fr 1fr}.compare{grid-template-columns:1fr 1fr}.dl{grid-template-columns:110px 1fr}.kpi .value{font-size:24px}}
+
+/* =====================================================================
+   Motion
+   ===================================================================== */
+html{scroll-padding-top:80px}
+
+/* page-to-page: nav, sidebar and top bar hold still; only the content changes */
+@view-transition{navigation:auto}
+.pnav{view-transition-name:ff-pnav}
+.side{view-transition-name:ff-side}
+.top{view-transition-name:ff-top}
+::view-transition-group(ff-pnav),::view-transition-group(ff-side),::view-transition-group(ff-top){animation-duration:0s}
+::view-transition-old(ff-pnav),::view-transition-new(ff-pnav),::view-transition-old(ff-side),::view-transition-new(ff-side),::view-transition-old(ff-top),::view-transition-new(ff-top){animation-duration:.15s}
+::view-transition-old(root){animation:.16s ease-out both ff-out}
+::view-transition-new(root){animation:.32s var(--ease-out) both ff-in}
+@keyframes ff-out{to{opacity:0}}
+@keyframes ff-in{from{opacity:0;transform:translateY(8px)}}
+
+/* theme switch: circular reveal (driven from theme.js); everything joins the root snapshot */
+html.vt-theme *{view-transition-name:none!important}
+html.vt-theme::view-transition-old(root),html.vt-theme::view-transition-new(root){animation:none;mix-blend-mode:normal}
+html.vt-theme::view-transition-new(root){z-index:2}
+/* no View Transitions API: quick colour cross-fade */
+html.theme-fade,html.theme-fade *,html.theme-fade *::before,html.theme-fade *::after{transition:background-color .3s ease,color .3s ease,border-color .3s ease,fill .3s ease!important}
+
+@media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}}
+@media (prefers-reduced-motion:reduce){
+  @view-transition{navigation:none}
+  *,*::before,*::after{transition-duration:0s!important;animation-duration:0s!important;scroll-behavior:auto!important}
+  .btn:hover,.btn:active,a.card:hover{transform:none}
+}
