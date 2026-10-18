@@ -1,4 +1,4 @@
-{% from "_macros.html" import icon %}<!doctype html>
+{% from "_macros.html" import icon, theme_toggle %}<!doctype html>
 <html lang="en">
 <head>
 {% include "_head.html" %}
@@ -9,9 +9,9 @@
 {% set ep = request.endpoint or '' %}
 <div class="shell">
   <aside class="side" id="side">
-    <a class="brand" href="{{ url_for('main.dashboard') }}" style="text-decoration:none">
+    <a class="brand" href="{{ url_for('main.dashboard') }}">
       <img src="{{ url_for('static', filename='img/mark.svg') }}" width="34" height="34" alt="">
-      <span><span class="brand-name">{{ APP_NAME }}</span><br><span class="brand-sub">Warehouse & fleet</span></span>
+      <span><span class="brand-name">{{ APP_NAME }}</span><br><span class="brand-sub">Warehouse &amp; fleet</span></span>
     </a>
     <nav class="nav">
       <div class="nav-group">Overview</div>
@@ -35,7 +35,7 @@
       <a href="{{ url_for('main.settings') }}" class="{{ 'on' if ep == 'main.settings' }}">{{ icon('gear') }}Settings</a>
       {% endif %}
     </nav>
-    <div class="side-foot">Signed in as <b>{{ current_user.name }}</b><br><a href="{{ url_for('auth.logout') }}">Log out</a></div>
+    <div class="side-foot">Signed in as <b>{{ current_user.name }}</b><br><a href="{{ url_for('auth.logout') }}">Log out</a> · <a href="{{ url_for('main.about') }}">About</a></div>
   </aside>
 
   <div class="main">
@@ -46,11 +46,12 @@
       </form>
       <div class="top-right">
         <a class="btn soft sm no-print" href="{{ url_for('transfers.new') }}">{{ icon('plus', 16) }}New transfer</a>
+        {{ theme_toggle() }}
         <a class="icon-btn" href="{{ url_for('main.alerts_page') }}" title="Alerts">{{ icon('bell') }}{% if nav_alerts %}<span class="dot">{{ nav_alerts|length }}</span>{% endif %}</a>
         <a class="user-chip" href="{{ url_for('main.profile') }}"><span class="avatar">{{ current_user.initials }}</span><span class="who"><b style="font-weight:600">{{ current_user.name.split()[0] }}</b> <span class="role">· {{ current_user.role }}</span></span></a>
       </div>
     </header>
-    <main class="content">
+    <main class="content" id="main">
       {% block content %}{% endblock %}
     </main>
   </div>

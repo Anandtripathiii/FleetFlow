@@ -24,6 +24,11 @@
     dispatchEvent(new Event('themechange'));
   };
 
+  document.addEventListener('click', e => {
+    const btn = e.target.closest('[data-theme-toggle]');
+    if (btn) setTheme(root.dataset.theme === 'dark' ? 'light' : 'dark');
+  });
+
   // Follow the system setting until the user picks a theme themselves.
   matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
     let saved = null;

@@ -1,0 +1,27 @@
+{% from "_macros.html" import theme_toggle %}
+{% set on_landing = request.endpoint == 'main.about' or (request.endpoint == 'main.dashboard' and not current_user.is_authenticated) %}
+{% set home = '' if on_landing else url_for('main.about') %}
+<header class="pnav">
+  <div class="pnav-in">
+    <a class="brand" href="{{ url_for('main.dashboard') if current_user.is_authenticated else '/' }}">
+      <img src="{{ url_for('static', filename='img/mark.svg') }}" width="28" height="28" alt="">
+      <span class="brand-name">{{ APP_NAME }}</span>
+    </a>
+    <nav class="pnav-links" aria-label="Main">
+      <a href="{{ home }}#features">Features</a>
+      <a href="{{ home }}#how">How it works</a>
+      <a href="{{ home }}#results">Results</a>
+      <a href="{{ home }}#run">Run it</a>
+    </nav>
+    <div class="pnav-right">
+      {{ theme_toggle() }}
+      {% if current_user.is_authenticated %}
+      <a class="btn sm primary" href="{{ url_for('main.dashboard') }}">Dashboard</a>
+      {% elif request.endpoint == 'auth.login' %}
+      <a class="btn sm" href="{{ url_for('auth.register') }}">Sign up</a>
+      {% else %}
+      <a class="btn sm primary" href="{{ url_for('auth.login') }}">Log in</a>
+      {% endif %}
+    </div>
+  </div>
+</header>
