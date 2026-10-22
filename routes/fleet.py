@@ -1,5 +1,6 @@
 import json
 import os
+import threading
 from functools import lru_cache
 
 from flask import Blueprint, flash, jsonify, redirect, render_template, request, url_for
@@ -128,6 +129,18 @@ def _run(scenario, seed):
             "rl": {"metrics": b.metrics(), "history": b.history, "log": b.log},
             "arbiter": {"metrics": c.metrics(), "history": c.history, "decisions": arb.decisions, "counts": arb.counts()},
             "rules_decisions": ra.decisions, "rl_decisions": rb.decisions}
+
+
+_warmed = threading.Event()
+
+
+@bp.before_app_request
+def warm_lab():
+    """The first request in each worker computes the Lab's default run (spike, seed 1) in the background,
+    so the Simulation Lab opens without a ~5 s wait. Results are deterministic, so the cache never goes stale."""
+    if not _warmed.is_set() and os.environ.get("LAB_WARMUP") != "0":
+        _warmed.set()
+        threading.Thread(target=_run, args=("spike", 1), daemon=True).start()
 
 
 @bp.route("/api/sim")

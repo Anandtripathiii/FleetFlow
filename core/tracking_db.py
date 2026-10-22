@@ -55,6 +55,9 @@ CREATE TABLE IF NOT EXISTS tracking_alerts (
 
 CREATE INDEX IF NOT EXISTS ix_trip_locations_trip ON trip_locations(trip_id, id);
 CREATE INDEX IF NOT EXISTS ix_trips_status ON trips(status);
+CREATE INDEX IF NOT EXISTS ix_trips_transfer ON trips(transfer_id);
+CREATE INDEX IF NOT EXISTS ix_trips_driver ON trips(driver_id, status);
+CREATE INDEX IF NOT EXISTS ix_trip_events_trip ON trip_events(trip_id);
 """
 
 # demo coordinates (South Delhi); the main warehouse is in Okhla Industrial Area

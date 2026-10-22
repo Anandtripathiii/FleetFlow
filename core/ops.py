@@ -1,10 +1,14 @@
 """Business rules: stock, transfers, purchase orders, suggestions, alerts and live fleet advice."""
+import time
 from datetime import datetime, timedelta
 
 import numpy as np
 
 from .db import log_activity, now
 from .sim import MOVES, N_ROBOTS, ZONES
+
+TWIN_TTL_S = 60          # Fleet page: reuse the twin plan for the same floor state for up to 60 s
+_TWIN_CACHE = {}
 
 
 class OpError(Exception):
@@ -334,24 +338,34 @@ def twin_advice(con, policy, horizon=900, seeds=(11, 12, 13), max_moves=3):
     def score(moves=(), pol=None):
         return float(np.mean([_rollout(plan, sd, init, rates, sig, moves, pol).metrics()["avg_wait_s"] for sd in seeds]))
 
-    base = score()
-    chosen, best = [], base
     alive = [init["zone"][i] for i in range(len(robots)) if init["status"][i] in (0, 1)]
     count = [alive.count(z) for z in range(len(ZONES))]
-    for _ in range(max_moves):
-        trial = []
-        for s, d in MOVES:
-            if count[s] - sum(1 for m in chosen if m[0] == s) + sum(1 for m in chosen if m[1] == s) <= 1:
-                continue                                           # every zone keeps at least one robot
-            trial.append((score(chosen + [(s, d)]), (s, d)))
-        if not trial:
-            break
-        val, mv = min(trial)
-        if val > best * 0.98:                                      # needs at least a 2% gain to be worth a trip
-            break
-        chosen.append(mv)
-        best = val
-    rl = score(pol=policy) if policy is not None else None
+    # the plan only depends on these inputs (seeds are fixed), so the same floor state gives the same answer
+    key = (repr(init), rates.round(6).tobytes(), sig.tobytes(), horizon, tuple(seeds), max_moves, type(policy).__name__)
+    hit = _TWIN_CACHE.get(key)
+    if hit and time.monotonic() - hit[0] < TWIN_TTL_S:
+        base, chosen, best, rl = hit[1]
+        chosen = list(chosen)
+    else:
+        base = score()
+        chosen, best = [], base
+        for _ in range(max_moves):
+            trial = []
+            for s, d in MOVES:
+                if count[s] - sum(1 for m in chosen if m[0] == s) + sum(1 for m in chosen if m[1] == s) <= 1:
+                    continue                                       # every zone keeps at least one robot
+                trial.append((score(chosen + [(s, d)]), (s, d)))
+            if not trial:
+                break
+            val, mv = min(trial)
+            if val > best * 0.98:                                  # needs at least a 2% gain to be worth a trip
+                break
+            chosen.append(mv)
+            best = val
+        rl = score(pol=policy) if policy is not None else None
+        if len(_TWIN_CACHE) > 32:
+            _TWIN_CACHE.clear()
+        _TWIN_CACHE[key] = (time.monotonic(), (base, tuple(chosen), best, rl))
 
     per_robot = 60.0 / SERVICE_S                                   # orders/min one robot can handle
     rob_now = list(count)
