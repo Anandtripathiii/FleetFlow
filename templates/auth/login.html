@@ -15,6 +15,11 @@
   <button type="button" data-e="admin@fleetflow.in" data-p="admin123"><span>Admin</span><span class="mono">admin@fleetflow.in</span></button>
   <button type="button" data-e="manager@fleetflow.in" data-p="manager123"><span>Manager</span><span class="mono">manager@fleetflow.in</span></button>
   <button type="button" data-e="staff@fleetflow.in" data-p="staff123"><span>Staff</span><span class="mono">staff@fleetflow.in</span></button>
+  <div>Team accounts · password from your team lead</div>
+  <button type="button" data-e="anand@fleetflow.in"><span>Owner · Anand</span><span class="mono">anand@fleetflow.in</span></button>
+  <button type="button" data-e="akshat@fleetflow.in"><span>Manager · Akshat</span><span class="mono">akshat@fleetflow.in</span></button>
+  <button type="button" data-e="saavya@fleetflow.in"><span>Manager · Saavya</span><span class="mono">saavya@fleetflow.in</span></button>
+  <button type="button" data-e="anurag@fleetflow.in"><span>Staff · Anurag</span><span class="mono">anurag@fleetflow.in</span></button>
 </div>
 {% endblock %}
 {% block after %}
@@ -24,7 +29,7 @@
 <script>
 document.querySelectorAll('.demo-logins [data-e]').forEach(d => d.onclick = () => {
   document.getElementById('email').value = d.dataset.e;
-  document.getElementById('password').value = d.dataset.p;
+  document.getElementById('password').value = d.dataset.p || '';   // team accounts: password is never shown here
   document.getElementById('password').focus();
 });
 </script>
