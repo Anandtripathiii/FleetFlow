@@ -6,7 +6,7 @@ import os
 import numpy as np
 import pytest
 
-from core.arbiter import Arbiter
+from core.arbiter import Arbiter, DecisionLog
 from core.policy import NumpyPolicy
 from core.sim import N_ACTIONS, WarehouseSim, make_plan, run_episode
 
@@ -71,6 +71,17 @@ def test_log_explains_rl_rules_and_none(pol):
         rows = [d for d in arb.decisions if d["source"] == src]
         assert rows, f"no {src} decision"
         assert all(d["reason"].startswith("Chose ") and set(d["pred"]) == {"rl", "rules", "none"} for d in rows)
+
+
+@pytest.mark.parametrize("name", ["rules", "rl"])
+def test_decision_log_only_reads(pol, name):
+    policy = pol if name == "rl" else None
+    plan = make_plan("spike", rng=np.random.default_rng(1))
+    log = DecisionLog(policy, name)
+    assert run_episode(plan, 1, log).metrics() == run_episode(plan, 1, policy).metrics()   # same run, just recorded
+    assert len(log.decisions) == plan.length // 10
+    assert all(d["source"] in (name, "none") and d["reason"].startswith(log.label + ": ") for d in log.decisions)
+    assert sum(log.counts().values()) == len(log.decisions)
 
 
 def test_policy_weights_unchanged():

@@ -43,6 +43,14 @@
   </div>
 </div>
 
+<div class="sim-pair" style="margin-top:16px">
+  {% for side, title, sub in [('rules','Rules decisions','what the fixed rules did at every 10 s decision point'),('rl','RL decisions','what the RL agent did at every 10 s decision point, with the zone state it saw')] %}
+  <div class="card">
+    <div class="card-h"><div><h2>{{ title }}</h2><div class="muted" style="font-size:12.5px">{{ sub }}</div></div><span class="badge plain" id="{{ side }}-counts">–</span></div>
+    <div class="log" id="{{ side }}-dlog" style="max-height:520px"><div class="muted">Run a scenario to see every decision.</div></div>
+  </div>{% endfor %}
+</div>
+
 <div class="grid g-2-1" style="margin-top:16px">
   <div class="card">
     <div class="card-h"><h2>Average wait over time</h2><div class="legend"><span><i style="background:var(--muted)"></i>Rules</span><span><i style="background:var(--accent)"></i>RL agent</span><span><i style="background:var(--info)"></i>Arbiter</span><span><i style="background:var(--chart-2)"></i>Demand (orders/min)</span></div></div>
@@ -75,5 +83,5 @@
 {% block scripts %}
 <script src="{{ url_for('static', filename='vendor/chart.umd.js') }}"></script>
 <script>window.SIM_API = "{{ url_for('fleet.api_sim') }}";</script>
-<script src="{{ url_for('static', filename='js/lab.js') }}?v=2"></script>
+<script src="{{ url_for('static', filename='js/lab.js') }}?v=3"></script>
 {% endblock %}
