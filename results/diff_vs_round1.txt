@@ -1,17 +1,19 @@
  .gitignore                       |   2 +
- DEMO.md                          |  57 +++++++++
- ROUND2.md                        | 123 ++++++++++++++++++++
- core/arbiter.py                  | 132 +++++++++++++++++++++
+ DEMO.md                          |  58 ++++++++++
+ Dockerfile                       |  17 +++
+ ROUND2.md                        | 124 ++++++++++++++++++++
+ core/arbiter.py                  | 176 ++++++++++++++++++++++++++++
  docs/round2_brief.md             |  23 ++++
- evaluate.py                      | 129 +++++++++++++++++++++
+ evaluate.py                      | 138 ++++++++++++++++++++++
+ results/diff_vs_round1.txt       |  17 +++
  results/eval.json                |  98 ++++++++++++++++
  results/eval.md                  |  14 +++
  results/round1_baseline.json     |  53 +++++++++
  results/sample_log_mixed_1.jsonl | 150 ++++++++++++++++++++++++
  results/sweep.json               | 242 +++++++++++++++++++++++++++++++++++++++
- routes/fleet.py                  |   6 +-
- static/js/lab.js                 |  31 +++--
- templates/fleet/lab.html         |  14 ++-
- tests/test_app.py                |  32 ++++++
- tests/test_arbiter.py            |  78 +++++++++++++
- 16 files changed, 1166 insertions(+), 18 deletions(-)
+ routes/fleet.py                  |  12 +-
+ static/js/lab.js                 |  39 +++++--
+ templates/fleet/lab.html         |  22 +++-
+ tests/test_app.py                |  34 ++++++
+ tests/test_arbiter.py            |  89 ++++++++++++++
+ 18 files changed, 1288 insertions(+), 20 deletions(-)
