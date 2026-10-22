@@ -23,6 +23,7 @@
       <a href="{{ url_for('transfers.index') }}" class="{{ 'on' if ep.startswith('transfers.') }}">{{ icon('truck') }}Transfers</a>
       <a href="{{ url_for('purchasing.index') }}" class="{{ 'on' if ep.startswith('purchasing.') }}">{{ icon('cart') }}Purchasing</a>
       <div class="nav-group">Fleet & AI</div>
+      {% if is_driver %}<a href="{{ url_for('tracking.drive') }}" class="{{ 'on' if ep == 'tracking.drive' }}">{{ icon('truck') }}My trip</a>{% endif %}
       <a href="{{ url_for('fleet.index') }}" class="{{ 'on' if ep in ('fleet.index',) }}">{{ icon('robot') }}Robot fleet</a>
       <a href="{{ url_for('fleet.lab') }}" class="{{ 'on' if ep == 'fleet.lab' }}">{{ icon('flask') }}Simulation lab</a>
       <a href="{{ url_for('signals.index') }}" class="{{ 'on' if ep.startswith('signals.') }}">{{ icon('signal') }}Demand signals</a>
