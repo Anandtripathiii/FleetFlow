@@ -31,7 +31,7 @@ def describe(a: int) -> str:
 
 
 class Arbiter:
-    def __init__(self, rl, rules=greedy_policy, horizon=120, margin=0.05, rollouts=3, min_gain=0.01,
+    def __init__(self, rl, rules=greedy_policy, horizon=180, margin=0.05, rollouts=3, min_gain=0.01,
                  budget_s=1.0, seed=0, force_fail=None):
         self.rl, self.rules = rl, rules
         self.horizon = horizon          # seconds played in the twin for each candidate
