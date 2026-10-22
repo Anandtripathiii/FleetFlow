@@ -1,0 +1,242 @@
+{
+ "seeds": [
+  0,
+  1,
+  2,
+  3,
+  4,
+  5,
+  6,
+  7,
+  8,
+  9
+ ],
+ "margin": 0.05,
+ "rollouts": 3,
+ "force_fail": false,
+ "runtime_s": 78.5,
+ "results": {
+  "60": {
+   "normal": {
+    "rules": 47.1,
+    "rl": 25.1,
+    "arbiter": 24.9,
+    "check": "arbiter within 5% of RL",
+    "pass": true,
+    "decisions": {
+     "rl": 46,
+     "rules": 75,
+     "none": 1379
+    }
+   },
+   "spike": {
+    "rules": 334.5,
+    "rl": 256.3,
+    "arbiter": 282.5,
+    "check": "arbiter within 5% of RL",
+    "pass": false,
+    "decisions": {
+     "rl": 20,
+     "rules": 16,
+     "none": 1464
+    }
+   },
+   "moving": {
+    "rules": 319.2,
+    "rl": 263.9,
+    "arbiter": 256.1,
+    "check": "arbiter within 5% of RL",
+    "pass": true,
+    "decisions": {
+     "rl": 16,
+     "rules": 18,
+     "none": 1466
+    }
+   },
+   "rush": {
+    "rules": 231.9,
+    "rl": 154.4,
+    "arbiter": 156.1,
+    "check": "arbiter within 5% of RL",
+    "pass": true,
+    "decisions": {
+     "rl": 14,
+     "rules": 8,
+     "none": 1478
+    }
+   },
+   "failure": {
+    "rules": 376.7,
+    "rl": 321.8,
+    "arbiter": 332.8,
+    "check": "arbiter within 5% of RL",
+    "pass": true,
+    "decisions": {
+     "rl": 20,
+     "rules": 16,
+     "none": 1464
+    }
+   },
+   "mixed": {
+    "rules": 235.7,
+    "rl": 252.5,
+    "arbiter": 107.0,
+    "check": "arbiter <= rules",
+    "pass": true,
+    "decisions": {
+     "rl": 27,
+     "rules": 103,
+     "none": 1370
+    }
+   }
+  },
+  "120": {
+   "normal": {
+    "rules": 47.1,
+    "rl": 25.1,
+    "arbiter": 23.0,
+    "check": "arbiter within 5% of RL",
+    "pass": true,
+    "decisions": {
+     "rl": 110,
+     "rules": 403,
+     "none": 987
+    }
+   },
+   "spike": {
+    "rules": 334.5,
+    "rl": 256.3,
+    "arbiter": 260.9,
+    "check": "arbiter within 5% of RL",
+    "pass": true,
+    "decisions": {
+     "rl": 50,
+     "rules": 50,
+     "none": 1400
+    }
+   },
+   "moving": {
+    "rules": 319.2,
+    "rl": 263.9,
+    "arbiter": 261.4,
+    "check": "arbiter within 5% of RL",
+    "pass": true,
+    "decisions": {
+     "rl": 40,
+     "rules": 38,
+     "none": 1422
+    }
+   },
+   "rush": {
+    "rules": 231.9,
+    "rl": 154.4,
+    "arbiter": 134.7,
+    "check": "arbiter within 5% of RL",
+    "pass": true,
+    "decisions": {
+     "rl": 46,
+     "rules": 30,
+     "none": 1424
+    }
+   },
+   "failure": {
+    "rules": 376.7,
+    "rl": 321.8,
+    "arbiter": 324.9,
+    "check": "arbiter within 5% of RL",
+    "pass": true,
+    "decisions": {
+     "rl": 44,
+     "rules": 50,
+     "none": 1406
+    }
+   },
+   "mixed": {
+    "rules": 235.7,
+    "rl": 252.5,
+    "arbiter": 91.6,
+    "check": "arbiter <= rules",
+    "pass": true,
+    "decisions": {
+     "rl": 44,
+     "rules": 242,
+     "none": 1214
+    }
+   }
+  },
+  "180": {
+   "normal": {
+    "rules": 47.1,
+    "rl": 25.1,
+    "arbiter": 21.8,
+    "check": "arbiter within 5% of RL",
+    "pass": true,
+    "decisions": {
+     "rl": 130,
+     "rules": 538,
+     "none": 832
+    }
+   },
+   "spike": {
+    "rules": 334.5,
+    "rl": 256.3,
+    "arbiter": 256.4,
+    "check": "arbiter within 5% of RL",
+    "pass": true,
+    "decisions": {
+     "rl": 88,
+     "rules": 50,
+     "none": 1362
+    }
+   },
+   "moving": {
+    "rules": 319.2,
+    "rl": 263.9,
+    "arbiter": 251.9,
+    "check": "arbiter within 5% of RL",
+    "pass": true,
+    "decisions": {
+     "rl": 88,
+     "rules": 45,
+     "none": 1367
+    }
+   },
+   "rush": {
+    "rules": 231.9,
+    "rl": 154.4,
+    "arbiter": 134.6,
+    "check": "arbiter within 5% of RL",
+    "pass": true,
+    "decisions": {
+     "rl": 63,
+     "rules": 45,
+     "none": 1392
+    }
+   },
+   "failure": {
+    "rules": 376.7,
+    "rl": 321.8,
+    "arbiter": 321.6,
+    "check": "arbiter within 5% of RL",
+    "pass": true,
+    "decisions": {
+     "rl": 80,
+     "rules": 49,
+     "none": 1371
+    }
+   },
+   "mixed": {
+    "rules": 235.7,
+    "rl": 252.5,
+    "arbiter": 91.2,
+    "check": "arbiter <= rules",
+    "pass": true,
+    "decisions": {
+     "rl": 53,
+     "rules": 305,
+     "none": 1142
+    }
+   }
+  }
+ }
+}
