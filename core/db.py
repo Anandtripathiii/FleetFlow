@@ -202,9 +202,40 @@ def init_db(con, demo=True):
     con.executescript(SCHEMA)
     if con.execute("SELECT COUNT(*) FROM zones").fetchone()[0] == 0 and demo:
         seed(con)
+    if demo:
+        seed_team(con)                              # every start, so a reset DB (Render) gets them back
     con.commit()
     from .tracking_db import migrate                # live GPS tracking tables (new tables only)
     migrate(con, demo)
+
+
+# Team accounts. Passwords are NOT in git: set TEAM_PW_ANAND etc. in the environment (Render) or in .env (local).
+TEAM = [("Anand Tripathi", "anand@fleetflow.in", "owner", "TEAM_PW_ANAND"),
+        ("Akshat", "akshat@fleetflow.in", "manager", "TEAM_PW_AKSHAT"),
+        ("Saavya", "saavya@fleetflow.in", "manager", "TEAM_PW_SAAVYA"),
+        ("Anurag", "anurag@fleetflow.in", "staff", "TEAM_PW_ANURAG")]
+ENV_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), ".env")
+
+
+def team_password(var):
+    """From the environment, else from the project's .env file (only TEAM_PW_* keys are read from it)."""
+    if os.environ.get(var):
+        return os.environ[var]
+    if os.path.exists(ENV_PATH):
+        with open(ENV_PATH, encoding="utf-8") as f:
+            for line in f:
+                k, _, v = line.strip().partition("=")
+                if k.strip() == var and v.strip():
+                    return v.strip().strip('"').strip("'")
+    return None
+
+
+def seed_team(con):
+    for name, email, role, var in TEAM:
+        pw = team_password(var)
+        if pw:                                      # no password set: skip the account rather than invent one
+            con.execute("INSERT OR IGNORE INTO users (name, email, password_hash, role, created_at) VALUES (?,?,?,?,?)",
+                        (name, email, generate_password_hash(pw), role, now()))
 
 
 def seed(con, rnd=None):
