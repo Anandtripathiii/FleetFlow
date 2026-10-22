@@ -15,7 +15,7 @@
  "rollouts": 3,
  "force_fail": false,
  "horizon": 180,
- "runtime_s": 52.1,
+ "runtime_s": 39.1,
  "decisions": {
   "rl": 502,
   "rules": 1032,
