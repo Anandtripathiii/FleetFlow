@@ -2,17 +2,51 @@
 
 Run locally:   pip install -r requirements.txt  &&  python app.py   ->  http://127.0.0.1:5000
 """
+import hashlib
 import os
 from datetime import datetime
 from functools import wraps
 
 from flask import Flask, redirect, request, url_for
+from flask_compress import Compress
 from flask_login import LoginManager, current_user
 
 from core import db as dbm
 from core.authz import User
 
 APP_NAME = "FleetFlow"
+
+
+def static_speedups(app):
+    """gzip/brotli for HTML, CSS, JS and JSON, and long browser caching for static files.
+
+    url_for('static', ...) adds ?h=<content hash>, so a changed file gets a new URL and the
+    one-year immutable cache can never serve an old version."""
+    Compress(app)
+    hashes = {}
+
+    @app.url_defaults
+    def static_hash(endpoint, values):
+        if endpoint == "static" and "filename" in values:
+            path = os.path.join(app.static_folder, values["filename"])
+            try:
+                key = (path, os.path.getmtime(path))
+            except OSError:
+                return
+            if key not in hashes:
+                with open(path, "rb") as f:
+                    hashes[key] = hashlib.md5(f.read()).hexdigest()[:10]
+            values["h"] = hashes[key]
+
+    @app.after_request
+    def static_cache(resp):                     # runs before Compress, which skips passthrough responses
+        if request.endpoint == "static" and resp.status_code == 200:
+            resp.direct_passthrough = False
+            if request.args.get("h"):
+                resp.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+        return resp
+
+
 def create_app():
     app = Flask(__name__)
     app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "dev-change-me")
@@ -27,6 +61,7 @@ def create_app():
     dbm.init_db(con, demo=os.environ.get("NO_DEMO_DATA") != "1")
     con.close()
     app.teardown_appcontext(dbm.close_db)
+    static_speedups(app)
 
     lm = LoginManager(app)
     lm.login_view = "auth.login"
