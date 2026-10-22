@@ -240,15 +240,28 @@ TRIP_SQL = """SELECT p.*, t.code AS transfer_code, t.priority, s.name AS to_name
               JOIN drivers d ON d.id=p.driver_id JOIN users u ON u.id=d.user_id LEFT JOIN vehicles v ON v.id=p.vehicle_id"""
 
 
-def trip_json(r):
+def signal(trip, age_s, cfg):
+    """What the manager should believe about the position: live, stale, offline, denied, unavailable or waiting."""
+    if trip["gps_state"] in ("denied", "unavailable"):
+        return trip["gps_state"]
+    if age_s is None:
+        return "waiting"
+    return "live" if age_s < cfg["stale_after_s"] else "stale" if age_s < cfg["offline_after_s"] else "offline"
+
+
+def trip_json(r, cfg=None):
     d = dict(r)
     seen = parse(r["last_seen_at"])
     d["age_s"] = int((datetime.now() - seen).total_seconds()) if seen else None
+    d["signal"] = signal(r, d["age_s"], cfg or config())
+    if r["last_lat"] is not None and r["dest_lat"] is not None:
+        d["dest_m"] = round(haversine_m(r["last_lat"], r["last_lng"], r["dest_lat"], r["dest_lng"]))
     return d
 
 
 def live_fleet(con):
-    trips = [trip_json(r) for r in con.execute(TRIP_SQL + " WHERE p.status IN ('active','arrived') ORDER BY p.id")]
+    cfg = config()
+    trips = [trip_json(r, cfg) for r in con.execute(TRIP_SQL + " WHERE p.status IN ('active','arrived') ORDER BY p.id")]
     fences = [dict(r) for r in con.execute("SELECT id, name, kind, lat, lng, radius_m FROM geofences")]
     alerts = [dict(r) for r in con.execute("""SELECT a.*, p.code AS trip_code FROM tracking_alerts a JOIN trips p ON p.id=a.trip_id
                                               WHERE a.resolved_at IS NULL ORDER BY a.id DESC LIMIT 50""")]

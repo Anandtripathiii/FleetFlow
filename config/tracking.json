@@ -4,5 +4,7 @@
   "osrm_url": "https://router.project-osrm.org",
   "osrm_timeout_s": 3,
   "max_batch": 100,
-  "moved_m": 25
+  "moved_m": 25,
+  "stale_after_s": 30,
+  "offline_after_s": 60
 }
