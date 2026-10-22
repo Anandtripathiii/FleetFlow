@@ -143,9 +143,12 @@ def profile():
 @_role("admin")
 def users():
     con = get_db()
+    roles = ["staff", "manager", "admin"] + (["owner"] if current_user.can("owner") else [])   # only owners make owners
     if request.method == "POST":
         act = request.form.get("action")
-        if act == "add":
+        if act in ("add", "role") and request.form.get("role", "staff") not in roles:
+            flash("You cannot give that role.", "error")
+        elif act == "add":
             email = request.form.get("email", "").strip().lower()
             if con.execute("SELECT 1 FROM users WHERE email=?", (email,)).fetchone():
                 flash("That email already has an account.", "error")
@@ -159,8 +162,11 @@ def users():
                 flash("User added.", "success")
         else:
             uid = int(request.form.get("uid", 0))
+            target = con.execute("SELECT role FROM users WHERE id=?", (uid,)).fetchone()
             if uid == current_user.id:
                 flash("You cannot change your own role or switch yourself off.", "error")
+            elif target and target["role"] == "owner" and not current_user.can("owner"):
+                flash("Only an owner can change an owner account.", "error")
             elif act == "role":
                 con.execute("UPDATE users SET role=? WHERE id=?", (request.form.get("role"), uid))
                 flash("Role updated.", "success")
@@ -173,7 +179,7 @@ def users():
         con.commit()
         return redirect(url_for("main.users"))
     rows = con.execute("SELECT * FROM users ORDER BY role, name").fetchall()
-    return render_template("users.html", rows=rows)
+    return render_template("users.html", rows=rows, roles=roles)
 
 
 @bp.route("/settings", methods=["GET", "POST"])

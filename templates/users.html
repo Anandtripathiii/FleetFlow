@@ -7,9 +7,9 @@
     <thead><tr><th>Name</th><th>Role</th><th>Last login</th><th>Status</th><th></th></tr></thead>
     <tbody>{% for u in rows %}
     <tr style="{{ 'opacity:.55' if not u.active }}"><td><b style="font-weight:600">{{ u.name }}</b><span class="sub">{{ u.email }}</span></td>
-      <td>{% if u.id == current_user.id %}<span class="badge b-ok plain" style="text-transform:capitalize">{{ u.role }} (you)</span>{% else %}
+      <td>{% if u.id == current_user.id %}<span class="badge b-ok plain" style="text-transform:capitalize">{{ u.role }} (you)</span>{% elif u.role not in roles %}<span class="badge plain" style="text-transform:capitalize">{{ u.role }}</span>{% else %}
         <form method="post" style="display:inline"><input type="hidden" name="action" value="role"><input type="hidden" name="uid" value="{{ u.id }}">
-        <select name="role" class="inline" style="width:auto;padding:4px 8px" onchange="this.form.submit()">{% for r in ['staff','manager','admin'] %}<option value="{{ r }}" {{ 'selected' if u.role == r }}>{{ r|capitalize }}</option>{% endfor %}</select></form>{% endif %}</td>
+        <select name="role" class="inline" style="width:auto;padding:4px 8px" onchange="this.form.submit()">{% for r in roles %}<option value="{{ r }}" {{ 'selected' if u.role == r }}>{{ r|capitalize }}</option>{% endfor %}</select></form>{% endif %}</td>
       <td style="font-size:13px">{{ u.last_login|ago }}</td>
       <td>{{ '<span class="badge b-ok">Active</span>'|safe if u.active else '<span class="badge b-off">Off</span>'|safe }}</td>
       <td style="text-align:right;white-space:nowrap">{% if u.id != current_user.id %}
@@ -21,7 +21,7 @@
       <div class="field"><label>Name</label><input name="name" required></div>
       <div class="field"><label>Email</label><input type="email" name="email" required></div>
       <div class="row"><div class="field"><label>Password</label><input type="password" name="password" minlength="6" required></div>
-        <div class="field"><label>Role</label><select name="role"><option value="staff">Staff</option><option value="manager">Manager</option><option value="admin">Admin</option></select></div></div>
+        <div class="field"><label>Role</label><select name="role">{% for r in roles %}<option value="{{ r }}">{{ r|capitalize }}</option>{% endfor %}</select></div></div>
       <button class="btn primary">Add user</button></div></form>
 </div>
 {% endblock %}
