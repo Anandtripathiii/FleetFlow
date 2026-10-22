@@ -1,4 +1,4 @@
-/* Simulation lab: plays back rules vs RL side by side on two canvases. */
+/* Simulation lab: plays back rules vs RL vs the policy arbiter on three canvases. */
 (() => {
   const TRAVEL = 40;
   // colours come from the CSS tokens so the floor follows the light/dark theme
@@ -14,7 +14,7 @@
   }
   const $ = id => document.getElementById(id);
   let data = null, frame = 0, playing = false, last = 0, acc = 0, chart = null;
-  const prevZone = { rules: [], rl: [] };
+  const prevZone = { rules: [], rl: [], arbiter: [] };
 
   // drawing happens in a 640 x 400 space, scaled to the real canvas size for sharp text
   const W = 640, H = 400;
@@ -90,13 +90,14 @@
 
   function render() {
     if (!data) return;
-    const a = data.rules.history[frame], b = data.rl.history[frame];
+    const a = data.rules.history[frame], b = data.rl.history[frame], c = data.arbiter.history[frame];
     draw('rules', a, data.zones, data.zone_names);
     draw('rl', b, data.zones, data.zone_names);
+    draw('arbiter', c, data.zones, data.zone_names);
     $('clock').textContent = fmt(a.t);
     const peak = Math.max(...a.rate.map((r, i) => r / [6, 6, 2, 2][i]));
     $('phase').textContent = peak > 1.5 ? 'demand shock in progress' : (a.t < 60 ? 'warming up' : 'normal flow');
-    for (const [side, s] of [['rules', a], ['rl', b]]) {
+    for (const [side, s] of [['rules', a], ['rl', b], ['arbiter', c]]) {
       $(side + '-avg').textContent = s.avg_wait.toFixed(0);
       $(side + '-served').textContent = s.served;
       $(side + '-moves').textContent = s.moves + ' moves';
@@ -107,8 +108,8 @@
   }
 
   function finish() {
-    const ra = data.rules.metrics, rb = data.rl.metrics;
-    for (const [side, m] of [['rules', ra], ['rl', rb]]) {
+    const ra = data.rules.metrics, rb = data.rl.metrics, rc = data.arbiter.metrics;
+    for (const [side, m] of [['rules', ra], ['rl', rb], ['arbiter', rc]]) {
       $(side + '-avg').textContent = m.avg_wait_s.toFixed(0);
       $(side + '-p90').textContent = m.p90_wait_s.toFixed(0);
       $(side + '-served').textContent = m.served;
@@ -122,7 +123,9 @@
     $('verdict').innerHTML = `<b>Result:</b> the RL agent changed average wait by <span class="${cls(better)}">${better >= 0 ? '−' : '+'}${Math.abs(better).toFixed(0)}%</span>,
       worst-case (P90) wait by <span class="${cls(p90)}">${p90 >= 0 ? '−' : '+'}${Math.abs(p90).toFixed(0)}%</span>
       and served <span class="${cls(served)}">${served >= 0 ? '+' : ''}${served.toFixed(0)}%</span> orders, using ${rb.moves} robot moves.
-      Robots sat idle ${rb.idle_pct.toFixed(0)}% of the time vs ${ra.idle_pct.toFixed(0)}% with fixed rules.`;
+      Robots sat idle ${rb.idle_pct.toFixed(0)}% of the time vs ${ra.idle_pct.toFixed(0)}% with fixed rules.
+      <br><b>Policy arbiter:</b> average wait ${rc.avg_wait_s.toFixed(0)} s vs RL ${rb.avg_wait_s.toFixed(0)} s and rules ${ra.avg_wait_s.toFixed(0)} s,
+      using ${rc.moves} robot moves.`;
   }
 
   function buildChart() {
@@ -134,10 +137,11 @@
       data: { labels, datasets: [
         { type: 'line', label: 'Rules', data: H.map(s => s.avg_wait), borderColor: P.muted, borderWidth: 2.5, pointRadius: 0, tension: .25 },
         { type: 'line', label: 'RL agent', data: data.rl.history.map(s => s.avg_wait), borderColor: cssColor('--accent'), borderWidth: 2.5, pointRadius: 0, tension: .25 },
+        { type: 'line', label: 'Arbiter', data: data.arbiter.history.map(s => s.avg_wait), borderColor: cssColor('--info'), borderWidth: 2.5, pointRadius: 0, tension: .25 },
         { type: 'bar', label: 'Demand', data: demand, backgroundColor: cssColor('--chart-2', .6), yAxisID: 'y2', barPercentage: 1, categoryPercentage: 1 },
       ] },
       options: { maintainAspectRatio: false, animation: false, interaction: { mode: 'index', intersect: false },
-        plugins: { legend: { display: false }, tooltip: { filter: i => i.datasetIndex < 3 } },
+        plugins: { legend: { display: false }, tooltip: { filter: i => i.datasetIndex < 4 } },
         scales: { x: { grid: { display: false }, ticks: { maxTicksLimit: 10 } },
           y: { title: { display: true, text: 'avg wait (s)' }, grid: { color: cssColor('--chart-grid') }, beginAtZero: true },
           y2: { position: 'right', grid: { display: false }, beginAtZero: true, title: { display: true, text: 'orders/min' } } } }
@@ -148,6 +152,9 @@
     const L = data.rl.log;
     $('log').innerHTML = L.length ? L.map(l => `<div><b>${fmt(l.t)}</b><span><b style="color:var(--ink)">${l.robot}</b> ${l.to === '-' ? '' : l.from + ' → ' + l.to}<br><span class="muted">${l.why}</span></span></div>`).join('')
       : '<div class="muted">The agent kept every robot where it was.</div>';
+    const D = data.arbiter.decisions, n = data.arbiter.counts, tag = { rl: 'b-info', rules: 'b-warn', none: '' };
+    $('arb-counts').textContent = `rl ${n.rl} · rules ${n.rules} · none ${n.none}`;
+    $('arb-log').innerHTML = D.map(d => `<div><b>${fmt(d.t)}</b><span><span class="badge ${tag[d.source]}">${d.source}</span> ${d.move}<br><span class="muted">${d.reason}</span></span></div>`).join('');
   }
 
   function tick(ts) {
@@ -165,21 +172,21 @@
     try {
       const r = await fetch(`${window.SIM_API}?scenario=${$('sc').value}&seed=${$('seed').value || 1}`);
       data = await r.json();
-      frame = 0; acc = 0; prevZone.rules = []; prevZone.rl = [];
-      ['p90', 'idle'].forEach(k => { $('rules-' + k).textContent = '–'; $('rl-' + k).textContent = '–'; });
+      frame = 0; acc = 0; prevZone.rules = []; prevZone.rl = []; prevZone.arbiter = [];
+      ['p90', 'idle'].forEach(k => ['rules', 'rl', 'arbiter'].forEach(side => { $(side + '-' + k).textContent = '–'; }));
       $('verdict-card').hidden = true;
       $('scrub').max = data.rules.history.length - 1;
       buildChart(); showLog();
       playing = true; $('play').disabled = false; $('play').textContent = 'Pause';
       last = performance.now(); requestAnimationFrame(tick);
-    } finally { $('run').disabled = false; $('run').innerHTML = 'Run both'; }
+    } finally { $('run').disabled = false; $('run').innerHTML = 'Run all'; }
   }
 
   window.addEventListener('resize', () => data && render());
   $('run').onclick = run;
   $('play').onclick = () => {
     if (!data) return;
-    if (frame >= data.rules.history.length - 1) { frame = 0; prevZone.rules = []; prevZone.rl = []; }
+    if (frame >= data.rules.history.length - 1) { frame = 0; prevZone.rules = []; prevZone.rl = []; prevZone.arbiter = []; }
     playing = !playing; $('play').textContent = playing ? 'Pause' : 'Play';
     if (playing) { last = performance.now(); requestAnimationFrame(tick); }
   };

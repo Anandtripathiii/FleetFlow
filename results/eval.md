@@ -1,6 +1,6 @@
 # Policy Arbiter evaluation
 
-Average queue wait in seconds over seeds [0, 1, 2, 3, 4, 5, 6, 7, 8, 9] (lower is better). Horizon 180s, margin 5%, rollouts 3, runtime 52s.
+Average queue wait in seconds over seeds [0, 1, 2, 3, 4, 5, 6, 7, 8, 9] (lower is better). Horizon 180s, margin 5%, rollouts 3, runtime 39s.
 
 |Scenario|Rules|RL|Arbiter|Check|Result|Decisions rl / rules / none|
 |-|-:|-:|-:|-|-|-|

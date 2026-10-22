@@ -4,7 +4,7 @@
 {% block content %}
 <div class="page-head">
   <div><div class="crumb"><a href="{{ url_for('fleet.index') }}">Robot fleet</a> /</div><h1>Simulation lab</h1>
-  <p>Same warehouse, same orders, same random seed. On the left, fixed rules. On the right, our RL agent. Hit a demand shock and watch who copes.</p></div>
+  <p>Same warehouse, same orders, same random seed. On the left, fixed rules. On the right, our RL agent. Below, the policy arbiter, which picks RL, rules or no move every 10 s. Hit a demand shock and watch who copes.</p></div>
   <span class="badge {{ 'b-ok' if kind == 'ppo' else 'b-warn' }} plain">{{ 'Agent: trained PPO' if kind == 'ppo' else 'Agent: heuristic (no trained model found)' }}</span>
 </div>
 
@@ -14,7 +14,7 @@
       <select id="sc">{% for k, v in scenarios.items() %}<option value="{{ k }}" {{ 'selected' if k == 'spike' }}>{{ v }}</option>{% endfor %}</select></div>
     <div class="field" style="margin:0;width:110px"><label>Seed</label><input id="seed" type="number" min="0" max="9999" value="1"></div>
     <div style="display:flex;gap:8px;align-self:flex-end">
-      <button class="btn primary" id="run">{{ icon('flask',16) }}Run both</button>
+      <button class="btn primary" id="run">{{ icon('flask',16) }}Run all</button>
       <button class="btn" id="play" disabled>Pause</button>
     </div>
     <div style="align-self:flex-end;display:flex;align-items:center;gap:8px"><span class="lbl">Speed</span><input type="range" id="speed" min="1" max="12" value="4"></div>
@@ -24,7 +24,7 @@
 </div>
 
 <div class="sim-pair" style="margin-top:16px">
-  {% for side, title, sub in [('rules','Basic rules','Robots stay in their home zone'),('rl','Our RL agent','Moves robots using queues, forecast and web signals')] %}
+  {% for side, title, sub in [('rules','Basic rules','Robots stay in their home zone'),('rl','Our RL agent','Moves robots using queues, forecast and web signals'),('arbiter','Policy arbiter','Every 10 s: RL, rules or no move, whichever the twin predicts waits least')] %}
   <div class="card">
     <div class="card-h"><div><h2>{{ title }}</h2><div class="muted" style="font-size:12.5px">{{ sub }}</div></div><span class="badge plain" id="{{ side }}-moves">0 moves</span></div>
     <div class="card-b">
@@ -37,11 +37,15 @@
       </div>
     </div>
   </div>{% endfor %}
+  <div class="card">
+    <div class="card-h"><div><h2>Arbiter decisions</h2><div class="muted" style="font-size:12.5px">source and reason for every move, with the twin's predicted wait</div></div><span class="badge plain" id="arb-counts">–</span></div>
+    <div class="log" id="arb-log" style="max-height:520px"><div class="muted">Run a scenario to see the arbiter's choices.</div></div>
+  </div>
 </div>
 
 <div class="grid g-2-1" style="margin-top:16px">
   <div class="card">
-    <div class="card-h"><h2>Average wait over time</h2><div class="legend"><span><i style="background:var(--muted)"></i>Rules</span><span><i style="background:var(--accent)"></i>RL agent</span><span><i style="background:var(--chart-2)"></i>Demand (orders/min)</span></div></div>
+    <div class="card-h"><h2>Average wait over time</h2><div class="legend"><span><i style="background:var(--muted)"></i>Rules</span><span><i style="background:var(--accent)"></i>RL agent</span><span><i style="background:var(--info)"></i>Arbiter</span><span><i style="background:var(--chart-2)"></i>Demand (orders/min)</span></div></div>
     <div class="card-b"><div class="chart-box" style="height:260px"><canvas id="chart"></canvas></div></div>
   </div>
   <div class="card">
@@ -71,5 +75,5 @@
 {% block scripts %}
 <script src="{{ url_for('static', filename='vendor/chart.umd.js') }}"></script>
 <script>window.SIM_API = "{{ url_for('fleet.api_sim') }}";</script>
-<script src="{{ url_for('static', filename='js/lab.js') }}?v=1"></script>
+<script src="{{ url_for('static', filename='js/lab.js') }}?v=2"></script>
 {% endblock %}

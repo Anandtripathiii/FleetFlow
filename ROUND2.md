@@ -32,7 +32,7 @@ We did **not** retrain PPO and did not change `policy_weights.npz` (a test check
 * **Mixed day:** waits drop from 252.5 s (RL) and 235.7 s (rules) to **91.2 s**.
 * **The other days:** the arbiter is as good as RL or better.
 * **Decisions over all 60 runs:** rl 502, rules 1032, none 7466. Most of the time the best choice is not to move, because one move costs 40 s of driving.
-* **Runtime:** the full eval (60 runs x rules + RL + arbiter) takes about **52 s** on a 16-core laptop. A single episode takes about 3 s.
+* **Runtime:** the full eval (60 runs x rules + RL + arbiter) takes **39-52 s** on a 16-core laptop (39 s in the final run). A single episode takes about 3 s.
 * **Speed per decision:** the slowest decision took 192 ms, against a 1 s budget. No fallbacks happened in the normal run.
 
 The "before" numbers from the Round 1 code are in `results/round1_baseline.json`. The full table is in
@@ -77,6 +77,23 @@ we do nothing. Moves cost driving time and battery.
 * On any error or timeout, the arbiter uses the rules action and logs `source: rules, reason: fallback: <error>`. The run never crashes.
 * To test this on purpose, use `--force-fail` or `ARBITER_FORCE_FAIL=1`, which make the lookahead raise an error every time.
 
+## Simulation Lab: third lane
+The animated Simulation Lab (`/fleet/lab`) now plays three lanes on the same day and seed: **Basic rules**, **Our RL agent**
+(both unchanged) and **Policy arbiter**. Next to the arbiter lane, an **Arbiter decisions** card lists every
+10 s choice with its source (rl / rules / none) and reason. The wait-over-time chart has a third line.
+It reuses the existing canvas, metric tiles, `.log` list and badges. Nothing was redesigned.
+
+The first run of a scenario takes a few seconds longer, because the arbiter plays its lookahead.
+After that the result is cached, as before.
+
+## What changed in existing files
+Everything else in Round 2 is a new file (see `results/diff_vs_round1.txt`). Only these existing files changed:
+* `.gitignore`: 2 lines, so the generated logs are not committed.
+* `routes/fleet.py`: `/fleet/api/sim` returns one extra `arbiter` field. The URL, parameters and the existing fields are the same.
+* `templates/fleet/lab.html` and `static/js/lab.js`: the third lane (Phase 6, stretch goal).
+
+No change to the SQLite schema, other routes, the PPO model, scenarios, TinyFish or deployment.
+
 ## How to run
 ```bash
 pip install -r requirements.txt pytest
@@ -86,7 +103,7 @@ python evaluate.py --force-fail            # every decision uses the rules fallb
 ARBITER_FORCE_FAIL=1 python evaluate.py    # same, with the env var
 python evaluate.py --scenarios mixed --seeds 0-2 --margin 0.1 --rollouts 2   # quick custom run
 python -m pytest -q                        # 11 tests: arbiter + app regression + weights hash
-python app.py                              # the app, unchanged -> http://127.0.0.1:5000
+python app.py                              # the app -> http://127.0.0.1:5000, Simulation Lab at /fleet/lab
 ```
 One decision log per run is saved as `results/logs/<scenario>_<seed>.jsonl`, one line per decision:
 `t, source (rl|rules|none), action, move, pred {rl, rules, none}, reason, ms`.
