@@ -9,6 +9,17 @@ from core.db import get_db
 bp = Blueprint("tracking", __name__)
 
 
+@bp.cli.command("check")
+def check_cmd():
+    """Run the alert checks once: `flask tracking check` (e.g. every minute from cron)."""
+    from core.alert_engine import check_all
+    from core.db import connect
+    con = connect()
+    out = check_all(con)
+    con.commit()
+    print({k: v for k, v in out.items() if v} or "no new alerts")
+
+
 @bp.route("/tracking")
 @role_required("manager")
 def live():

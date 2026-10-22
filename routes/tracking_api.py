@@ -20,6 +20,7 @@ from flask import Blueprint, jsonify, request
 from flask_login import current_user
 
 from core import tracking as tr
+from core.alert_engine import check_all, check_trip
 from core.db import get_db, log_activity
 
 bp = Blueprint("tracking_api", __name__, url_prefix="/api")
@@ -77,6 +78,7 @@ def start(con):
 @api()
 def locations(con, tid):
     n = tr.add_locations(con, tr.own_trip(con, tid, current_user.id), body(), current_user.id)
+    check_trip(con, tr.get_trip(con, tid))
     return {"stored": n}
 
 
@@ -116,6 +118,7 @@ def cancel(con, tid):
 @bp.get("/fleet/live")
 @api(manager=True)
 def live(con):
+    check_all(con)                                  # each manager poll also runs the alert checks
     return tr.live_fleet(con)
 
 
