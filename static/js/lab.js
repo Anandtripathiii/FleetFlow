@@ -152,9 +152,17 @@
     const L = data.rl.log;
     $('log').innerHTML = L.length ? L.map(l => `<div><b>${fmt(l.t)}</b><span><b style="color:var(--ink)">${l.robot}</b> ${l.to === '-' ? '' : l.from + ' → ' + l.to}<br><span class="muted">${l.why}</span></span></div>`).join('')
       : '<div class="muted">The agent kept every robot where it was.</div>';
-    const D = data.arbiter.decisions, n = data.arbiter.counts, tag = { rl: 'b-info', rules: 'b-warn', none: '' };
-    $('arb-counts').textContent = `rl ${n.rl} · rules ${n.rules} · none ${n.none}`;
-    $('arb-log').innerHTML = D.map(d => `<div><b>${fmt(d.t)}</b><span><span class="badge ${tag[d.source]}">${d.source}</span> ${d.move}<br><span class="muted">${d.reason}</span></span></div>`).join('');
+    decisionLog('arb', data.arbiter.decisions);
+    decisionLog('rules', data.rules_decisions, 'rules-dlog');
+    decisionLog('rl', data.rl_decisions, 'rl-dlog');
+  }
+
+  // one card per policy: every 10 s decision with its source tag and reason
+  function decisionLog(side, D, logId = side + '-log') {
+    const tag = { rl: 'b-info', rules: 'b-warn', none: '' };
+    const n = s => D.filter(d => d.source === s).length;
+    $(side + '-counts').textContent = `rl ${n('rl')} · rules ${n('rules')} · none ${n('none')}`;
+    $(logId).innerHTML = D.map(d => `<div><b>${fmt(d.t)}</b><span><span class="badge ${tag[d.source]}">${d.source}</span> ${d.move}<br><span class="muted">${d.reason}</span></span></div>`).join('');
   }
 
   function tick(ts) {
