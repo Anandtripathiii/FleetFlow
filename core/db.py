@@ -203,6 +203,8 @@ def init_db(con, demo=True):
     if con.execute("SELECT COUNT(*) FROM zones").fetchone()[0] == 0 and demo:
         seed(con)
     con.commit()
+    from .tracking_db import migrate                # live GPS tracking tables (new tables only)
+    migrate(con, demo)
 
 
 def seed(con, rnd=None):
