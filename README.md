@@ -98,6 +98,11 @@ To start fresh, delete `fleetflow.db` and run again. To skip the demo seed, set 
 |**Manager**|`manager@fleetflow.in`|`manager123`|Approve transfers, apply AI advice, run purchases|
 |**Staff**|`staff@fleetflow.in`|`staff123`|Record stock in / out, view everything read-only|
 |**Driver**|`driver@fleetflow.in`|`driver123`|Staff user with a driver profile: shares live GPS on **My trip** (`/drive`)|
+|**Owner**|`anand@fleetflow.in`|from `TEAM_PW_ANAND`|Team account: everything an admin can do; only owners can change owners|
+|**Manager**|`akshat@fleetflow.in`, `saavya@fleetflow.in`|from `TEAM_PW_AKSHAT` / `TEAM_PW_SAAVYA`|Team accounts|
+|**Staff**|`anurag@fleetflow.in`|from `TEAM_PW_ANURAG`|Team account|
+
+Team passwords are never stored in git. Set the four `TEAM_PW_*` variables in `.env` locally, or as environment variables on Render. Missing accounts are created on every start.
 
 \---
 
