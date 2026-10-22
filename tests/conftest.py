@@ -8,6 +8,9 @@ from werkzeug.security import generate_password_hash
 os.environ["DB_PATH"] = os.path.join(tempfile.mkdtemp(), "test.db")   # never the dev DB in instance/
 os.environ["TRACKING_OSRM_URL"] = ""                                   # straight-line ETA, no OSRM call
 os.environ["LAB_WARMUP"] = "0"                                         # no background Lab run in tests
+TEAM_PASSWORDS = {"TEAM_PW_ANAND": "t-anand-1", "TEAM_PW_AKSHAT": "t-akshat-1",   # test-only values, not the real ones
+                  "TEAM_PW_SAAVYA": "t-saavya-1", "TEAM_PW_ANURAG": "t-anurag-1"}
+os.environ.update(TEAM_PASSWORDS)
 
 DRIVER = ("driver@fleetflow.in", "driver123")
 MANAGER = ("manager@fleetflow.in", "manager123")
