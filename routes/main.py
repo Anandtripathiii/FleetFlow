@@ -38,7 +38,7 @@ def dashboard():
     pr = zone_pressure(con)
     acts = con.execute("""SELECT a.*, u.name FROM activity a LEFT JOIN users u ON u.id=a.user_id ORDER BY a.id DESC LIMIT 7""").fetchall()
     return render_template("dashboard.html", k=k, flow=flow, by_cat=by_cat, open_tr=open_tr, low=low, pr=pr,
-                           acts=acts, al=alerts(con))
+                           acts=acts, al=alerts(con, tracking=current_user.can("manager")))
 
 
 @bp.route("/about")
@@ -48,7 +48,7 @@ def about():
 
 @bp.route("/alerts")
 def alerts_page():
-    return render_template("alerts.html", al=alerts(get_db()))
+    return render_template("alerts.html", al=alerts(get_db(), tracking=current_user.can("manager")))
 
 
 @bp.route("/search")

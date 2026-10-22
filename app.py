@@ -68,7 +68,7 @@ def create_app():
         if current_user.is_authenticated:
             from core.ops import alerts
             try:
-                ctx["nav_alerts"] = alerts(dbm.get_db())
+                ctx["nav_alerts"] = alerts(dbm.get_db(), tracking=current_user.can("manager"))
                 from core.tracking import driver_of
                 ctx["is_driver"] = driver_of(dbm.get_db(), current_user.id) is not None
             except Exception:

@@ -246,7 +246,7 @@ def reorder_plan(con):
 
 
 # ---------------------------------------------------------------------- alerts
-def alerts(con):
+def alerts(con, tracking=False):
     a = []
     for r in con.execute("SELECT id, name, qty, reorder_level FROM products WHERE active=1 AND qty=0"):
         a.append(("danger", f"{r['name']} is out of stock in the warehouse", f"/inventory/{r['id']}"))
@@ -266,6 +266,9 @@ def alerts(con):
         a.append(("warn", f"{late} purchase order{'s are' if late > 1 else ' is'} late", "/purchasing"))
     for r in con.execute("SELECT s.title, z.code, s.multiplier FROM signals s JOIN zones z ON z.id=s.zone_id WHERE s.active=1 AND (s.expires_at IS NULL OR s.expires_at > ?) AND s.multiplier>=2", (now(),)):
         a.append(("info", f"Demand signal Zone {r['code']} x{r['multiplier']:.1f}: {r['title']}", "/signals"))
+    if tracking:                                    # live GPS alerts, for managers only
+        for r in con.execute("SELECT level, message FROM tracking_alerts WHERE resolved_at IS NULL ORDER BY id DESC LIMIT 20"):
+            a.append(({"danger": "danger", "warn": "warn"}.get(r["level"], "info"), r["message"], "/tracking"))
     return a
 
 
