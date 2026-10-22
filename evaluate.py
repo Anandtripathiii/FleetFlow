@@ -14,7 +14,7 @@ from multiprocessing import Pool
 
 import numpy as np
 
-from core.arbiter import SOURCES, Arbiter
+from core.arbiter import SOURCES, Arbiter, DecisionLog
 from core.policy import NumpyPolicy
 from core.sim import SCENARIOS, make_plan, run_episode
 
@@ -25,12 +25,20 @@ def run_one(job):
     sc, sd, horizons, cfg = job
     plan = make_plan(sc, rng=np.random.default_rng(sd))
     pol = NumpyPolicy.load()
-    out = {"scenario": sc, "seed": sd, "rules": run_episode(plan, sd).metrics()["avg_wait_s"],
-           "rl": run_episode(plan, sd, pol).metrics()["avg_wait_s"], "arbiter": {}}
+    rules, rl = DecisionLog(None, "rules"), DecisionLog(pol, "rl")     # only records; actions pass through
+    out = {"scenario": sc, "seed": sd, "rules": run_episode(plan, sd, rules).metrics()["avg_wait_s"],
+           "rl": run_episode(plan, sd, rl).metrics()["avg_wait_s"], "arbiter": {},
+           "rules_decisions": rules.decisions, "rl_decisions": rl.decisions}
     for h in horizons:
         arb = Arbiter(pol, horizon=h, **cfg)
         out["arbiter"][h] = {"wait": run_episode(plan, sd, arb).metrics()["avg_wait_s"], "decisions": arb.decisions}
     return out
+
+
+def write_jsonl(path, rows):
+    with open(path, "w") as f:
+        for d in rows:
+            f.write(json.dumps(d) + "\n")
 
 
 def table(runs, h):
@@ -113,9 +121,10 @@ def main():
     res = results[h]
     os.makedirs(os.path.join(out, "logs"), exist_ok=True)
     for r in runs:
-        with open(os.path.join(out, "logs", f"{r['scenario']}_{r['seed']}.jsonl"), "w") as f:
-            for d in r["arbiter"][h]["decisions"]:
-                f.write(json.dumps(d) + "\n")
+        name = f"{r['scenario']}_{r['seed']}.jsonl"
+        write_jsonl(os.path.join(out, "logs", name), r["arbiter"][h]["decisions"])
+        write_jsonl(os.path.join(out, "logs", "rl_" + name), r["rl_decisions"])
+        write_jsonl(os.path.join(out, "logs", "rules_" + name), r["rules_decisions"])
     total = {s: sum(r["decisions"][s] for r in res.values()) for s in SOURCES}
     with open(os.path.join(out, "eval.json"), "w") as f:
         json.dump({**meta, "horizon": h, "runtime_s": round(secs, 1), "decisions": total, "results": res}, f, indent=1)
