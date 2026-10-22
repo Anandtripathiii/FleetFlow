@@ -6,7 +6,7 @@ Before the demo: `git checkout round2-arbiter`, `pip install -r requirements.txt
 ```bash
 git diff round1-baseline..round2-arbiter --stat
 ```
-Say: "Everything is new files: the arbiter, an eval script, tests and docs. No existing app file changed,
+Say: "All new files (the arbiter, an eval script, tests and docs) plus 2 lines in .gitignore. No app code changed,
 and the PPO weights are untouched. A test checks their SHA256."
 
 ## 0:20 - Run the evaluation (60 s)
