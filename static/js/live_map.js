@@ -86,7 +86,7 @@
     });
     $('alert-count').textContent = data.alerts.length;
     $('alerts').innerHTML = data.alerts.length ? data.alerts.map(a => `
-      <div><b>${hm(a.created_at)}</b><span><span class="badge ${a.level === 'danger' ? 'b-pending' : 'b-warn'}">${esc(a.trip_code)}</span> ${esc(a.message)}</span></div>`).join('')
+      <div><b>${hm(a.created_at)}</b><span><span class="badge ${a.level === 'danger' ? 'b-pending' : 'b-warn'}">${esc(a.trip_code)}</span> ${esc(a.message.replace(a.trip_code + ': ', ''))}</span></div>`).join('')
       : '<div class="muted" style="padding:14px 18px">No open alerts.</div>';
     details();
   }
