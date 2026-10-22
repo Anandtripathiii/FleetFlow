@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon %}
+{% block title %}My trip{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><div class="crumb">Driver /</div><h1>My trip</h1>
+  <p>Share your location while you drive, report problems, and mark arrival at the shop.</p></div>
+</div>
+
+<div class="note warn" style="margin-bottom:16px">
+  <b>Keep this page open and the screen on.</b> A browser can only share GPS while this tab is open.
+  It stops when the phone locks, the screen turns off, or you switch to another app. When that happens the
+  manager sees your location as stale or offline. It is never guessed.
+</div>
+
+{% if not trip %}
+<div class="card">
+  <div class="card-h"><h2>Start a trip</h2></div>
+  <div class="card-b">
+    {% if available %}
+    <div class="field"><label for="transfer">Delivery</label>
+      <select id="transfer">{% for t in available %}<option value="{{ t.id }}">{{ t.code }} → {{ t.to_name }} ({{ t.area }}){{ ' · URGENT' if t.priority == 'urgent' }}</option>{% endfor %}</select></div>
+    <div class="field"><label for="vehicle">Vehicle</label>
+      <select id="vehicle">{% for v in vehicles %}<option value="{{ v.id }}">{{ v.code }} · {{ v.plate }}</option>{% endfor %}</select></div>
+    <button class="btn primary block" id="start">{{ icon('truck', 16) }}Start trip</button>
+    {% else %}
+    <div class="empty">{{ icon('truck') }}<div>No dispatched deliveries are waiting. A manager dispatches transfers on the Transfers page.</div></div>
+    {% endif %}
+  </div>
+</div>
+{% else %}
+<div class="card" id="trip" data-id="{{ trip.id }}" data-status="{{ trip.status }}">
+  <div class="card-h"><div><h2>{{ trip.code }} · {{ trip.transfer_code }}</h2><div class="muted" style="font-size:12.5px">to {{ trip.to_name }}</div></div>
+    <span class="badge {{ 'b-info' if trip.status == 'active' else 'b-warn' }}">{{ 'On the way' if trip.status == 'active' else 'Arrived' }}</span></div>
+  <div class="card-b">
+    <dl class="dl">
+      <dt>Vehicle</dt><dd>{{ trip.vehicle_code or '–' }} {{ trip.plate or '' }}</dd>
+      <dt>Started</dt><dd>{{ trip.started_at[11:16] }}</dd>
+      <dt>ETA</dt><dd>{% if trip.eta_at %}{{ trip.eta_at[11:16] }}{% if trip.eta_source == 'approximate' %} <span class="muted">(approximate, straight line)</span>{% endif %}{% else %}–{% endif %}</dd>
+    </dl>
+  </div>
+</div>
+
+{% if trip.status == 'active' %}
+<div class="card" style="margin-top:16px">
+  <div class="card-h"><h2>Location sharing</h2><span class="badge" id="gps-badge">Off</span></div>
+  <div class="card-b">
+    <p id="gps-text" style="margin:0 0 14px">Location is not being shared yet.</p>
+    <dl class="dl" style="margin-bottom:14px">
+      <dt>Last fix</dt><dd id="gps-last">–</dd>
+      <dt>Accuracy</dt><dd id="gps-acc">–</dd>
+      <dt>Waiting to send</dt><dd id="gps-queue">0 points</dd>
+    </dl>
+    <button class="btn primary block" id="share">{{ icon('signal', 16) }}Share my location</button>
+  </div>
+</div>
+
+<div class="card" style="margin-top:16px">
+  <div class="card-h"><h2>Arrived at the shop?</h2></div>
+  <div class="card-b">
+    <p class="muted" style="margin:0 0 12px">The manager still confirms that the shop received the goods. Arriving does not complete the delivery by itself.</p>
+    <button class="btn block" id="arrived">{{ icon('check', 16) }}Mark arrived</button>
+  </div>
+</div>
+{% else %}
+<div class="card" style="margin-top:16px"><div class="card-b">
+  <b>Waiting for the manager to confirm receipt.</b> You can still report a problem below.
+</div></div>
+{% endif %}
+
+<div class="card" style="margin-top:16px">
+  <div class="card-h"><h2>Report an issue</h2></div>
+  <div class="card-b">
+    <div class="field"><label for="issue-kind">What happened?</label>
+      <select id="issue-kind">{% for k, v in kinds.items() %}<option value="{{ k }}">{{ v }}</option>{% endfor %}</select></div>
+    <div class="field"><label for="issue-note">Details (optional)</label><textarea id="issue-note" rows="2" maxlength="500"></textarea></div>
+    <button class="btn danger block" id="issue">{{ icon('alert', 16) }}Send to manager</button>
+  </div>
+</div>
+{% endif %}
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/drive.js') }}?v=1"></script>
+{% endblock %}
