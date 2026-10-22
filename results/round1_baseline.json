@@ -1,0 +1,53 @@
+{
+ "seeds": [
+  0,
+  1,
+  2,
+  3,
+  4,
+  5,
+  6,
+  7,
+  8,
+  9
+ ],
+ "metric": "avg_wait_s",
+ "results": {
+  "normal": {
+   "rules": 47.1,
+   "rl": 25.1,
+   "heuristic": 22.8,
+   "rl_better_than_rules_pct": 46.7
+  },
+  "spike": {
+   "rules": 334.5,
+   "rl": 256.3,
+   "heuristic": 253.1,
+   "rl_better_than_rules_pct": 23.4
+  },
+  "moving": {
+   "rules": 319.2,
+   "rl": 263.9,
+   "heuristic": 255.7,
+   "rl_better_than_rules_pct": 17.3
+  },
+  "rush": {
+   "rules": 231.9,
+   "rl": 154.4,
+   "heuristic": 141.7,
+   "rl_better_than_rules_pct": 33.4
+  },
+  "failure": {
+   "rules": 376.7,
+   "rl": 321.8,
+   "heuristic": 321.0,
+   "rl_better_than_rules_pct": 14.6
+  },
+  "mixed": {
+   "rules": 235.7,
+   "rl": 252.5,
+   "heuristic": 89.3,
+   "rl_better_than_rules_pct": -7.1
+  }
+ }
+}
