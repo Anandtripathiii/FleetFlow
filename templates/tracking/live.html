@@ -19,7 +19,8 @@
 <div class="page-head">
   <div><div class="crumb"><a href="{{ url_for('fleet.index') }}">Robot fleet</a> /</div><h1>Live tracking</h1>
   <p>Delivery vans on the road. Positions come from the drivers' phones. Stale after {{ cfg.stale_after_s }} s, offline after {{ cfg.offline_after_s }} s without a fix. Positions are never guessed.</p></div>
-  <span class="badge plain" id="updated">Connecting…</span>
+  <div class="actions"><span class="badge plain" id="updated">Connecting…</span>
+    <a class="btn" href="{{ url_for('tracking.trips') }}">{{ icon('list',16) }}Trip history</a></div>
 </div>
 
 <div class="card">

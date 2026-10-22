@@ -76,7 +76,8 @@ def detail(tid):
         src_qty = {r["product_id"]: r["qty"] for r in con.execute("SELECT product_id, qty FROM shop_stock WHERE shop_id=?", (t["from_shop_id"],))}
     else:
         src_qty = {i["product_id"]: i["wh_qty"] for i in items}
-    return render_template("transfers/detail.html", t=t, items=items, src_qty=src_qty)
+    trip = con.execute("SELECT id, code, status FROM trips WHERE transfer_id=? ORDER BY id DESC LIMIT 1", (tid,)).fetchone()
+    return render_template("transfers/detail.html", t=t, items=items, src_qty=src_qty, trip=trip)
 
 
 @bp.route("/<int:tid>/<action>", methods=["POST"])

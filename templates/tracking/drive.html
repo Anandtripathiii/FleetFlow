@@ -38,6 +38,7 @@
       <dt>Started</dt><dd>{{ trip.started_at[11:16] }}</dd>
       <dt>ETA</dt><dd>{% if trip.eta_at %}{{ trip.eta_at[11:16] }}{% if trip.eta_source == 'approximate' %} <span class="muted">(approximate, straight line)</span>{% endif %}{% else %}–{% endif %}</dd>
     </dl>
+    <a class="btn sm" style="margin-top:14px" href="{{ url_for('tracking.trip', tid=trip.id) }}">{{ icon('list',16) }}Timeline</a>
   </div>
 </div>
 
