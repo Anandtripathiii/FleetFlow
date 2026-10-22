@@ -1,10 +1,10 @@
-"""Logged-in user object and role checks (staff < manager < admin)."""
+"""Logged-in user object and role checks (staff < manager < admin < owner)."""
 from functools import wraps
 
 from flask import flash, redirect, request, url_for
 from flask_login import UserMixin, current_user
 
-ROLE_RANK = {"staff": 1, "manager": 2, "admin": 3}
+ROLE_RANK = {"staff": 1, "manager": 2, "admin": 3, "owner": 4}   # owner can do everything an admin can
 
 class User(UserMixin):
     def __init__(self, row):
