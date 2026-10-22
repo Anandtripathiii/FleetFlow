@@ -10,7 +10,7 @@ if it comes back, the same row is opened again. So a manager never gets the same
 from datetime import datetime
 
 from .db import now
-from .tracking import config, haversine_m, parse
+from .tracking import config, haversine_m, parse, sync_with_transfers
 
 # Out of scope this round: SMS / WhatsApp / email / push. Add a sender here once its key is in .env.
 # Each sender gets the alert dict. In-app needs nothing: the bell and the live map read tracking_alerts.
@@ -105,5 +105,6 @@ def check_trip(con, t, cfg=None, at=None):
 
 
 def check_all(con, at=None):
+    sync_with_transfers(con)                        # trips closed by hand on the Transfers page get no alerts
     cfg = config()
     return {t["code"]: check_trip(con, t, cfg, at) for t in con.execute("SELECT * FROM trips WHERE status='active'")}

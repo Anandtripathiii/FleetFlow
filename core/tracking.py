@@ -215,10 +215,12 @@ def confirm_receipt(con, trip, user_id):
     """Manager confirms the shop received the goods: delivers the transfer and closes the trip."""
     if trip["status"] not in OPEN:
         raise TrackingError("Trip is already closed", 409)
-    try:
-        advance_transfer(con, trip["transfer_id"], "deliver", user_id)
-    except OpError as e:
-        raise TrackingError(str(e), 409)
+    st = con.execute("SELECT status FROM transfers WHERE id=?", (trip["transfer_id"],)).fetchone()["status"]
+    if st != "delivered":                           # may already be delivered by hand on the transfer page
+        try:
+            advance_transfer(con, trip["transfer_id"], "deliver", user_id)
+        except OpError as e:
+            raise TrackingError(str(e), 409)
     con.execute("UPDATE trips SET status='completed', completed_at=?, confirmed_by=? WHERE id=?", (now(), user_id, trip["id"]))
     con.execute("UPDATE tracking_alerts SET resolved_at=? WHERE trip_id=? AND resolved_at IS NULL", (now(), trip["id"]))
     event(con, trip["id"], "received", "Manager confirmed receipt. Transfer delivered.", user_id)
@@ -230,6 +232,17 @@ def cancel_trip(con, trip, user_id, reason=""):
     con.execute("UPDATE trips SET status='cancelled', completed_at=? WHERE id=?", (now(), trip["id"]))
     con.execute("UPDATE tracking_alerts SET resolved_at=? WHERE trip_id=? AND resolved_at IS NULL", (now(), trip["id"]))
     event(con, trip["id"], "cancelled", "Trip ended without delivery" + (f": {reason[:200]}" if reason else ""), user_id)
+
+
+def sync_with_transfers(con):
+    """Open trips follow their transfer: delivered or cancelled by hand on the Transfers page closes the trip."""
+    for t in con.execute("""SELECT p.*, x.status AS tstatus FROM trips p JOIN transfers x ON x.id=p.transfer_id
+                            WHERE p.status IN ('active','arrived') AND x.status IN ('delivered','cancelled')""").fetchall():
+        done = t["tstatus"] == "delivered"
+        con.execute("UPDATE trips SET status=?, completed_at=? WHERE id=?", ("completed" if done else "cancelled", now(), t["id"]))
+        con.execute("UPDATE tracking_alerts SET resolved_at=? WHERE trip_id=? AND resolved_at IS NULL", (now(), t["id"]))
+        event(con, t["id"], "received" if done else "cancelled",
+              "Transfer marked delivered on the Transfers page" if done else "Transfer cancelled on the Transfers page")
 
 
 # ------------------------------------------------------------------ reads
