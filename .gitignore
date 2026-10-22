@@ -6,3 +6,5 @@ core/_candidate.npz
 core/_bc*.npz
 core/ppo_model.zip
 *.log
+results/logs/
+results/force_fail/
