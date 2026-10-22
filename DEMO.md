@@ -53,5 +53,6 @@ Open http://127.0.0.1:5000 and log in as `manager@fleetflow.in` / `manager123`.
 2. Open **Simulation lab**, pick **Mixed day**, then press **Run all**.
 3. Point at the three lanes (rules, RL, arbiter) and the blue arbiter line in the chart, which ends lowest.
 4. Scroll the **Arbiter decisions** card: rl / rules / none badges, each with its reason.
+5. The Lab now shows decision logs for all three policies: point at **Rules decisions** and **RL decisions** below it. Note that most RL entries are NONE because RL asks for moves that can't happen.
 
 If time is left: `python -m pytest -q` shows 11 passed.
