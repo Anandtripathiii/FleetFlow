@@ -81,6 +81,7 @@ we do nothing. Moves cost driving time and battery.
 The animated Simulation Lab (`/fleet/lab`) now plays three lanes on the same day and seed: **Basic rules**, **Our RL agent**
 (both unchanged) and **Policy arbiter**. Next to the arbiter lane, an **Arbiter decisions** card lists every
 10 s choice with its source (rl / rules / none) and reason. The wait-over-time chart has a third line.
+The Lab now shows decision logs for all three policies: **Rules decisions** and **RL decisions** cards sit below the arbiter (also saved as `results/logs/rules_<scenario>_<seed>.jsonl` and `rl_<scenario>_<seed>.jsonl`), with reasons built from the live zone state.
 It reuses the existing canvas, metric tiles, `.log` list and badges. Nothing was redesigned.
 
 The first run of a scenario takes a few seconds longer, because the arbiter plays its lookahead.
