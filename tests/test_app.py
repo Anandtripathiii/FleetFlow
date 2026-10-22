@@ -24,7 +24,9 @@ def test_demo_login_and_fleet_pages(app, email, password):
     for path in ("/fleet/", "/fleet/lab", "/fleet/api/sim?scenario=mixed&seed=1"):
         assert c.get(path).status_code == 200, path
     sim = c.get("/fleet/api/sim?scenario=mixed&seed=1").get_json()
-    assert {"rules", "rl", "arbiter"} <= set(sim) and len(sim["arbiter"]["history"]) == len(sim["rl"]["history"])
+    assert {"rules", "rl", "arbiter", "rl_decisions", "rules_decisions"} <= set(sim)
+    assert len(sim["arbiter"]["history"]) == len(sim["rl"]["history"])
+    assert len(sim["rl_decisions"]) == len(sim["rules_decisions"]) == len(sim["arbiter"]["decisions"])
 
 
 def test_wrong_password_stays_on_login(app):

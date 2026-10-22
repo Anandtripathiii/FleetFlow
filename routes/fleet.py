@@ -5,7 +5,7 @@ from functools import lru_cache
 from flask import Blueprint, flash, jsonify, redirect, render_template, request, url_for
 from flask_login import current_user
 
-from core.arbiter import Arbiter
+from core.arbiter import Arbiter, DecisionLog
 from core.authz import role_required
 from core.db import get_db, log_activity, now
 from core.ops import twin_advice, zone_pressure
@@ -117,15 +117,17 @@ def _run(scenario, seed):
     policy, kind = get_policy()
     import numpy as np
     plan = make_plan(scenario, rng=np.random.default_rng(seed))
-    a = run_episode(plan, seed)
-    b = run_episode(plan, seed, policy)
+    ra, rb = DecisionLog(None, "rules"), DecisionLog(policy, "rl")       # only records; same runs as before
+    a = run_episode(plan, seed, ra)
+    b = run_episode(plan, seed, rb)
     arb = Arbiter(policy)
     c = run_episode(plan, seed, arb)
     return {"scenario": scenario, "seed": seed, "kind": kind, "length": plan.length, "robots": N_ROBOTS, "zones": ZONES,
             "zone_names": ZONE_NAMES,
             "rules": {"metrics": a.metrics(), "history": a.history, "log": a.log},
             "rl": {"metrics": b.metrics(), "history": b.history, "log": b.log},
-            "arbiter": {"metrics": c.metrics(), "history": c.history, "decisions": arb.decisions, "counts": arb.counts()}}
+            "arbiter": {"metrics": c.metrics(), "history": c.history, "decisions": arb.decisions, "counts": arb.counts()},
+            "rules_decisions": ra.decisions, "rl_decisions": rb.decisions}
 
 
 @bp.route("/api/sim")
