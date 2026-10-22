@@ -18,7 +18,7 @@ import time
 
 import numpy as np
 
-from .sim import DECISION_S, MOVES, ZONES, greedy_policy
+from .sim import DECISION_S, MOVES, N_ROBOTS, N_ZONES, ZONES, greedy_policy
 
 SOURCES = ("rl", "rules", "none")
 
@@ -28,6 +28,50 @@ def describe(a: int) -> str:
         return "no move"
     s, d = MOVES[a - 1]
     return f"move {ZONES[s]}->{ZONES[d]}"
+
+
+def zone_state(sim, z: int) -> str:
+    return f"Zone {ZONES[z]} {len(sim.queues[z])} waiting, {sim.forecast()[z]:.0f}/min, {sim.robots_in(z)} robot(s)"
+
+
+class DecisionLog:
+    """Wrap the RL policy (or None = fixed rules) so each 10 s decision is logged like the arbiter's.
+
+    The action is passed through unchanged, so the run is identical to running the policy directly.
+    Reasons are built from the sim state at that moment: queues, recent demand and robots per zone.
+    """
+
+    def __init__(self, policy, name: str):
+        self.policy, self.name, self.decisions = policy, name, []
+        self.label = "RL" if name == "rl" else name.capitalize()
+
+    def __call__(self, obs, sim) -> int:
+        a = int(self.policy(obs, sim)) if self.policy is not None else 0
+        busiest = max(range(N_ZONES), key=lambda z: len(sim.queues[z]))
+        if not sim.queues[busiest]:
+            busiest = None                           # nothing waiting anywhere: no zone is "longest"
+        if a <= 0:
+            what = "keep every robot in its home zone" if self.policy is None else "make no move"
+            state = f"Longest queue: {zone_state(sim, busiest)}" if busiest is not None else "No orders waiting"
+            source, reason = "none", f"{self.label}: {what}. {state}"
+        else:
+            s, d = MOVES[a - 1]
+            # same check as WarehouseSim.move_robot: src needs a free robot and must keep at least one
+            ok = sim.robots_in(s) > 1 and any(sim.zone[i] == s and sim.status[i] in (0, 1) for i in range(N_ROBOTS))
+            if ok:
+                source = self.name
+                reason = f"{self.label}: {describe(a)}. " \
+                         f"To: {zone_state(sim, d)}{' (longest queue)' if d == busiest else ''}. From: {zone_state(sim, s)}"
+            else:
+                source = "none"
+                reason = f"{self.label}: picked {describe(a)}, but Zone {ZONES[s]} " \
+                         f"has no robot to spare, so nothing moved. {zone_state(sim, s)}"
+        self.decisions.append({"t": int(sim.t), "source": source, "action": a if source != "none" else 0,
+                               "move": describe(a) if source != "none" else "no move", "reason": reason})
+        return a
+
+    def counts(self) -> dict:
+        return {s: sum(d["source"] == s for d in self.decisions) for s in SOURCES}
 
 
 class Arbiter:
