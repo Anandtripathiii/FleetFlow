@@ -58,5 +58,5 @@
 {% block scripts %}
 <script src="{{ url_for('static', filename='vendor/leaflet/leaflet.js') }}"></script>
 <script>window.LIVE_API = "{{ url_for('tracking_api.live') }}";</script>
-<script src="{{ url_for('static', filename='js/live_map.js') }}?v=2"></script>
+<script src="{{ url_for('static', filename='js/live_map.js') }}"></script>
 {% endblock %}

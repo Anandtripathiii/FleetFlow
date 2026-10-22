@@ -58,6 +58,6 @@
 {% if d.track %}
 <script src="{{ url_for('static', filename='vendor/leaflet/leaflet.js') }}"></script>
 <script>window.TRIP = {{ {'track': d.track, 'fence': fence} | tojson }};</script>
-<script src="{{ url_for('static', filename='js/trip_map.js') }}?v=1"></script>
+<script src="{{ url_for('static', filename='js/trip_map.js') }}"></script>
 {% endif %}
 {% endblock %}
