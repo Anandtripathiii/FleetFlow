@@ -46,12 +46,14 @@ def create_app():
     from routes.purchasing import bp as po_bp
     from routes.fleet import bp as fleet_bp
     from routes.signals import bp as sig_bp
-    for b in (auth_bp, main_bp, inv_bp, shops_bp, tr_bp, po_bp, fleet_bp, sig_bp):
+    from routes.tracking_api import bp as trk_api_bp
+    from routes.tracking import bp as trk_bp
+    for b in (auth_bp, main_bp, inv_bp, shops_bp, tr_bp, po_bp, fleet_bp, sig_bp, trk_api_bp, trk_bp):
         app.register_blueprint(b)
 
     @app.before_request
     def require_login():
-        open_paths = ("/login", "/register", "/static/", "/healthz")
+        open_paths = ("/login", "/register", "/static/", "/healthz", "/api/")   # /api/ answers 401 JSON itself
         public_pages = ("/", "/about")         # landing page
         if not current_user.is_authenticated and not request.path.startswith(open_paths) and request.path not in public_pages:
             return redirect(url_for("auth.login", next=request.path))
@@ -66,7 +68,9 @@ def create_app():
         if current_user.is_authenticated:
             from core.ops import alerts
             try:
-                ctx["nav_alerts"] = alerts(dbm.get_db())
+                ctx["nav_alerts"] = alerts(dbm.get_db(), tracking=current_user.can("manager"))
+                from core.tracking import driver_of
+                ctx["is_driver"] = driver_of(dbm.get_db(), current_user.id) is not None
             except Exception:
                 ctx["nav_alerts"] = []
         return ctx

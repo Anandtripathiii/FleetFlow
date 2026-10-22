@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon %}
+{% block title %}Live tracking{% endblock %}
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='vendor/leaflet/leaflet.css') }}">
+<style>
+  .live-map{height:560px;border-top:1px solid var(--line);background:var(--surface-2)}
+  :root:not([data-theme=light]) .live-map .leaflet-tile-pane{filter:invert(1) hue-rotate(180deg) brightness(.9) contrast(.9)}
+  .live-map .leaflet-container{font-family:var(--sans,inherit)}
+  .veh{display:grid;place-items:center;width:30px;height:30px;border-radius:50%;border:2px solid var(--bg);font:700 10px/1 var(--mono);color:var(--bg);box-shadow:0 2px 8px rgba(0,0,0,.35)}
+  .veh.sel{outline:3px solid var(--accent);outline-offset:2px}
+  .veh.live{background:var(--ok)} .veh.stale{background:var(--warn)} .veh.offline{background:var(--bad)}
+  .veh.denied,.veh.unavailable,.veh.waiting{background:var(--muted)}
+  .trip-row{cursor:pointer} .trip-row.sel{background:var(--surface-2)}
+  @media (max-width:900px){.live-map{height:420px}}
+</style>
+{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><div class="crumb"><a href="{{ url_for('fleet.index') }}">Robot fleet</a> /</div><h1>Live tracking</h1>
+  <p>Delivery vans on the road. Positions come from the drivers' phones. Stale after {{ cfg.stale_after_s }} s, offline after {{ cfg.offline_after_s }} s without a fix. Positions are never guessed.</p></div>
+  <div class="actions"><span class="badge plain" id="updated">Connecting…</span>
+    <a class="btn" href="{{ url_for('tracking.trips') }}">{{ icon('list',16) }}Trip history</a></div>
+</div>
+
+<div class="card">
+  <div class="card-b controls">
+    <div class="field" style="margin:0;min-width:150px"><label for="f-status">Trip</label>
+      <select id="f-status"><option value="">All open trips</option><option value="active">On the way</option><option value="arrived">Arrived</option></select></div>
+    <div class="field" style="margin:0;min-width:150px"><label for="f-signal">GPS</label>
+      <select id="f-signal"><option value="">Any</option><option value="live">Live</option><option value="stale">Stale</option><option value="offline">Offline</option><option value="denied">No permission</option><option value="unavailable">No signal</option><option value="waiting">No fix yet</option></select></div>
+    <div class="field" style="margin:0;min-width:180px;flex:1"><label for="f-q">Search</label><input id="f-q" placeholder="Driver, trip, van or shop"></div>
+    <label style="align-self:flex-end;display:flex;gap:8px;align-items:center;font-size:13.5px;padding-bottom:9px"><input type="checkbox" id="f-alerts"> Only with alerts</label>
+  </div>
+</div>
+
+<div class="grid g-2-1" style="margin-top:16px">
+  <div class="card">
+    <div class="card-h"><h2>Map</h2><div class="legend"><span><i style="background:var(--ok)"></i>Live</span><span><i style="background:var(--warn)"></i>Stale</span><span><i style="background:var(--bad)"></i>Offline</span><span><i style="background:var(--muted)"></i>No GPS</span><span><i style="background:var(--info)"></i>Shop</span></div></div>
+    <div class="live-map" id="map" role="region" aria-label="Live map of delivery vans"></div>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:16px;min-width:0">
+    <div class="card">
+      <div class="card-h"><h2 id="d-title">Trip details</h2><span class="badge plain" id="d-signal">–</span></div>
+      <div class="card-b" id="details"><div class="muted">Click a van on the map or a trip below.</div></div>
+    </div>
+    <div class="card">
+      <div class="card-h"><h2>Open trips</h2><span class="badge plain" id="count">0</span></div>
+      <div class="log" id="trips" style="max-height:260px"><div class="muted" style="padding:14px 18px">No vans on the road.</div></div>
+    </div>
+    <div class="card">
+      <div class="card-h"><h2>Alerts</h2><span class="badge plain" id="alert-count">0</span></div>
+      <div class="log" id="alerts" style="max-height:240px"><div class="muted" style="padding:14px 18px">No open alerts.</div></div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='vendor/leaflet/leaflet.js') }}"></script>
+<script>window.LIVE_API = "{{ url_for('tracking_api.live') }}";</script>
+<script src="{{ url_for('static', filename='js/live_map.js') }}?v=2"></script>
+{% endblock %}

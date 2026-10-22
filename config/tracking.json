@@ -1,0 +1,20 @@
+{
+  "_note": "Live GPS tracking settings. Times in seconds unless the name says _min. No API keys here: keys go in .env.",
+  "avg_speed_kmh": 20,
+  "osrm_url": "https://router.project-osrm.org",
+  "osrm_timeout_s": 3,
+  "max_batch": 100,
+  "moved_m": 25,
+  "stale_after_s": 30,
+  "offline_after_s": 60,
+  "delay_min": [
+    10,
+    30
+  ],
+  "stoppage_min": [
+    10,
+    20,
+    30
+  ],
+  "approach_m": 500
+}

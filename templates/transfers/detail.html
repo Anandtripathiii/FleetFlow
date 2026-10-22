@@ -10,6 +10,7 @@
     <p>{{ t.src }} → <b>{{ t.shop }}</b> · created {{ t.created_at|when }} by {{ t.by_name or '—' }}</p></div>
   <div class="actions">
     <a class="btn" href="{{ url_for('transfers.picklist', tid=t.id) }}" target="_blank">{{ icon('print',16) }}Pick list</a>
+    {% if trip and current_user.can('manager') %}<a class="btn" href="{{ url_for('tracking.trip', tid=trip.id) }}">{{ icon('globe',16) }}Tracking {{ trip.code }}</a>{% endif %}
     {% if t.status == 'pending' %}<form method="post" action="{{ url_for('transfers.act', tid=t.id, action='pick') }}"><button class="btn primary">{{ icon('robot',16) }}Start picking</button></form>
     {% elif t.status == 'picking' %}<form method="post" action="{{ url_for('transfers.act', tid=t.id, action='dispatch') }}"><button class="btn primary">{{ icon('truck',16) }}Dispatch</button></form>
     {% elif t.status == 'in_transit' %}<form method="post" action="{{ url_for('transfers.act', tid=t.id, action='deliver') }}"><button class="btn primary">{{ icon('check',16) }}Mark delivered</button></form>{% endif %}

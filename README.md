@@ -97,6 +97,7 @@ To start fresh, delete `fleetflow.db` and run again. To skip the demo seed, set 
 |**Admin**|`admin@fleetflow.in`|`admin123`|Everything, plus users and settings|
 |**Manager**|`manager@fleetflow.in`|`manager123`|Approve transfers, apply AI advice, run purchases|
 |**Staff**|`staff@fleetflow.in`|`staff123`|Record stock in / out, view everything read-only|
+|**Driver**|`driver@fleetflow.in`|`driver123`|Staff user with a driver profile: shares live GPS on **My trip** (`/drive`)|
 
 \---
 
@@ -252,6 +253,64 @@ python train\\\_rl.py                        # \\\~30 min on a laptop CPU
 ```
 
 Output: a fresh `core/policy\\\_weights.npz`. The web app picks it up on the next restart.
+
+\---
+
+## Live GPS tracking
+
+Delivery vans share live GPS from the driver's phone. Managers watch them on a map and get alerts.
+
+|Page|Who|What|
+|-|-|-|
+|`/drive` **My trip**|Drivers|Start a trip for a dispatched transfer, share location, report an issue, mark arrived. Built for phones.|
+|`/tracking` **Live tracking**|Manager, admin|One OpenStreetMap map with moving vans, a details panel, filters, open alerts and **Confirm receipt**|
+|`/tracking/trips`|Manager, admin|Trip history. Each trip shows its timeline and the GPS track on a map. A driver can open their own trips.|
+
+**Flow:** Transfer dispatched → driver starts trip → GPS points → (issues, alerts) → driver marks arrived → **a manager confirms receipt** → transfer delivered, trip completed.
+GPS never confirms receipt by itself. "Mark delivered" on the transfer page still works, and it closes the trip too.
+
+### Browser GPS limits (read this)
+
+* A browser shares location **only while the My trip page is open and the screen is on.** It stops when the phone locks, the screen turns off, the tab closes or the driver switches app. The page asks the phone to keep the screen awake while sharing.
+* Browsers only allow location on **https** (or `localhost`). A phone opening `http://192.168.x.x:5000` will see "Needs HTTPS".
+* No permission or no signal is shown as **No permission / No signal / Stale / Offline**. A position is never guessed.
+* For all-day tracking, use a native app or GPS hardware. They can send the **same API payloads** (below) with `"source": "native"` or `"device"`.
+
+### API (JSON, login cookie; every endpoint answers 401 / 403 as JSON)
+
+|Endpoint|Who|Body|
+|-|-|-|
+|`POST /api/trips`|Driver|`{"transfer_id": 12, "vehicle_id": 1}`|
+|`POST /api/trips/<id>/locations`|Its driver|`{"lat", "lng", "accuracy"?, "speed"?, "heading"?, "timestamp"? (epoch ms)}` or `{"points": [...up to 100], "source": "browser\|native\|device"}` or `{"error": "permission_denied\|position_unavailable\|timeout"}`|
+|`POST /api/trips/<id>/issues`|Its driver|`{"kind": "breakdown\|accident\|traffic\|address\|shop_closed\|other", "note"?}`|
+|`POST /api/trips/<id>/arrived`|Its driver|`{}`|
+|`POST /api/trips/<id>/confirm`|Manager|`{}`: confirms receipt and delivers the transfer|
+|`POST /api/trips/<id>/cancel`|Manager or its driver|`{"reason"?}`|
+|`GET /api/fleet/live`|Manager|Open trips with GPS state, geofences, open alerts|
+|`GET /api/trips/<id>`|Manager or its driver|Trip, timeline, issues, alerts, GPS track|
+
+POST bodies must be `Content-Type: application/json`. A plain cross-site form cannot send that, which protects the session cookie.
+
+### Alerts and settings
+
+Thresholds live in `config/tracking.json`:
+
+|Alert|Default|
+|-|-|
+|GPS stale / offline|30 s / 60 s without a fix|
+|Delay|10 min (warn), 30 min (danger) past the ETA|
+|Stoppage|10 / 20 / 30 min without moving 25 m|
+|Approaching the shop|500 m|
+|Driver issue, no permission, no signal|immediately|
+
+* **ETA:** from the free public OSRM router, with a 3 s timeout. If OSRM does not answer, the ETA is a straight line at 20 km/h and is labelled **approximate**.
+* **When alerts are checked:** on every GPS post and every live-map poll (every 5 s). There is no background thread, because gunicorn runs 2 workers and the free host sleeps.
+* **For checks when nobody is watching:** run `flask --app app tracking check` from cron every minute.
+* **Where alerts appear:** in the bell and on Alerts, for managers only.
+* **No repeats:** each alert is opened once and resolved when the cause goes away.
+* **SMS / WhatsApp / email / push:** not in this round. Add a sender to `EXTRA_CHANNELS` in `core/alert_engine.py`, and keep its keys in `.env` (already in `.gitignore`).
+
+**Tables** (one migration, `core/tracking_db.py`, new tables only): `drivers`, `vehicles`, `geofences`, `trips`, `trip_locations`, `trip_events`, `driver_issues`, `tracking_alerts`.
 
 \---
 
