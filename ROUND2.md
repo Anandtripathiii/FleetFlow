@@ -109,6 +109,20 @@ python app.py                              # the app -> http://127.0.0.1:5000, S
 One decision log per run is saved as `results/logs/<scenario>_<seed>.jsonl`, one line per decision:
 `t, source (rl|rules|none), action, move, pred {rl, rules, none}, reason, ms`.
 
+## Accounts
+The 3 demo logins (`admin@` / `manager@` / `staff@fleetflow.in`) are unchanged. There are also 4 team accounts:
+
+|Name|Login|Role|
+|-|-|-|
+|Anand Tripathi|`anand@fleetflow.in`|Owner (everything an admin can do; only an owner can change an owner)|
+|Akshat|`akshat@fleetflow.in`|Manager|
+|Saavya|`saavya@fleetflow.in`|Manager|
+|Anurag|`anurag@fleetflow.in`|Staff|
+
+Their passwords are **not in git**. They come from the environment variables `TEAM_PW_ANAND`, `TEAM_PW_AKSHAT`,
+`TEAM_PW_SAAVYA` and `TEAM_PW_ANURAG`: put them in `.env` locally, or in the Render dashboard. The app creates
+any missing team account on every start. An account with no password set is skipped.
+
 ## Real-world use and scaling
 * **Safe way to bring in AI.** A real warehouse can run a learned policy while the twin checks every move
   before a robot drives. When RL is wrong (like on the mixed day), the arbiter quietly uses the rules,

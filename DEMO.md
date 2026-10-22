@@ -47,7 +47,7 @@ Say: "The lookahead now crashes on every decision. The run still finishes on the
 `fallback: RuntimeError: forced failure`. The warehouse never stops."
 
 ## 2:10 - See it live (50 s)
-Open http://127.0.0.1:5000 and log in as `manager@fleetflow.in` / `manager123`.
+Open http://127.0.0.1:5000 and log in as `manager@fleetflow.in` / `manager123`. The team accounts work too: `anand@` (owner), `akshat@` and `saavya@` (managers), `anurag@` (staff), with passwords from the team lead.
 
 1. Open **Robot fleet**: it works as in Round 1.
 2. Open **Simulation lab**, pick **Mixed day**, then press **Run all**.
