@@ -18,7 +18,7 @@ APP_NAME = "FleetFlow"
 
 
 def static_speedups(app):
-    """gzip/brotli for HTML, CSS, JS and JSON, and long browser caching for static files.
+    """gzip/brotli for HTML and JSON (brotli for static files), and long browser caching for static files.
 
     url_for('static', ...) adds ?h=<content hash>, so a changed file gets a new URL and the
     one-year immutable cache can never serve an old version."""
@@ -39,11 +39,9 @@ def static_speedups(app):
             values["h"] = hashes[key]
 
     @app.after_request
-    def static_cache(resp):                     # runs before Compress, which skips passthrough responses
-        if request.endpoint == "static" and resp.status_code == 200:
-            resp.direct_passthrough = False
-            if request.args.get("h"):
-                resp.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+    def static_cache(resp):
+        if request.endpoint == "static" and resp.status_code == 200 and request.args.get("h"):
+            resp.headers["Cache-Control"] = "public, max-age=31536000, immutable"
         return resp
 
 
