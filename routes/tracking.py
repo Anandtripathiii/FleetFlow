@@ -3,9 +3,16 @@ from flask import Blueprint, flash, redirect, render_template, url_for
 from flask_login import current_user
 
 from core import tracking as tr
+from core.authz import role_required
 from core.db import get_db
 
 bp = Blueprint("tracking", __name__)
+
+
+@bp.route("/tracking")
+@role_required("manager")
+def live():
+    return render_template("tracking/live.html", cfg=tr.config())
 
 
 @bp.route("/drive")
