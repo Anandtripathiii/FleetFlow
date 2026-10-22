@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon %}
+{% block title %}{{ t.code }}{% endblock %}
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='vendor/leaflet/leaflet.css') }}">
+<style>
+  .live-map{height:440px;border-top:1px solid var(--line);background:var(--surface-2)}
+  :root:not([data-theme=light]) .live-map .leaflet-tile-pane{filter:invert(1) hue-rotate(180deg) brightness(.9) contrast(.9)}
+</style>
+{% endblock %}
+{% block content %}
+{% set KIND = {'started':'Trip started','gps_denied':'No GPS permission','gps_unavailable':'No GPS signal','gps_ok':'GPS back',
+               'issue':'Issue reported','arrived':'Driver arrived','received':'Receipt confirmed','cancelled':'Trip ended'} %}
+<div class="page-head">
+  <div><div class="crumb">{% if current_user.can('manager') %}<a href="{{ url_for('tracking.trips') }}">Trip history</a>{% else %}<a href="{{ url_for('tracking.drive') }}">My trip</a>{% endif %} /</div>
+    <h1>{{ t.code }} <span class="badge {{ labels[t.status][1] }}">{{ labels[t.status][0] }}</span></h1>
+    <p>{{ t.driver_name }} · {{ t.vehicle_code or 'no vehicle' }} → <b>{{ t.to_name }}</b> for
+      {% if current_user.can('manager') %}<a href="{{ url_for('transfers.detail', tid=t.transfer_id) }}">{{ t.transfer_code }}</a>{% else %}{{ t.transfer_code }}{% endif %}</p></div>
+  {% if current_user.can('manager') and t.status in ('active','arrived') %}
+  <div class="actions"><a class="btn primary" href="{{ url_for('tracking.live') }}">{{ icon('globe',16) }}Live map</a></div>{% endif %}
+</div>
+
+<div class="grid g-2-1">
+  <div class="card">
+    <div class="card-h"><h2>GPS track</h2><span class="muted" style="font-size:12.5px">{{ d.track|length }} points · {{ '%.1f'|format(km) }} km driven</span></div>
+    {% if d.track %}<div class="live-map" id="map" role="region" aria-label="Map of the GPS track"></div>
+    {% else %}<div class="empty">{{ icon('signal') }}<div>No GPS points were received for this trip.{% if t.gps_state == 'denied' %} The driver did not allow location access.{% endif %}</div></div>{% endif %}
+  </div>
+  <div class="card">
+    <div class="card-h"><h2>Summary</h2></div>
+    <div class="card-b"><dl class="dl">
+      <dt>Started</dt><dd>{{ t.started_at }}</dd>
+      <dt>ETA given</dt><dd>{{ t.eta_at or '–' }}{% if t.eta_source == 'approximate' %} <span class="muted">(approximate)</span>{% endif %}</dd>
+      <dt>Arrived</dt><dd>{{ t.arrived_at or '–' }}</dd>
+      <dt>Closed</dt><dd>{{ t.completed_at or '–' }}</dd>
+      <dt>Last fix</dt><dd>{{ t.last_seen_at or 'never' }}</dd>
+      <dt>Issues</dt><dd>{{ d.issues|length }}</dd>
+      <dt>Alerts</dt><dd>{{ d.alerts|length }} ({{ t.open_alerts }} open)</dd>
+    </dl>
+    <p class="muted" style="font-size:12.5px;margin:14px 0 0">Receipt is always confirmed by a person, never by GPS alone.</p></div>
+  </div>
+</div>
+
+<div class="card" style="margin-top:16px">
+  <div class="card-h"><h2>Timeline</h2><span class="muted" style="font-size:12.5px">everything that happened on this trip, oldest first</span></div>
+  <div class="log" style="max-height:none">
+    {% for at, what, e in timeline %}
+      <div><b>{{ at[11:19] }}</b><span>
+        {% if what == 'event' %}<b style="color:var(--ink)">{{ KIND.get(e.kind, e.kind) }}</b><br><span class="muted">{{ e.detail }}</span>
+        {% else %}<span class="badge {{ 'b-pending' if e.level == 'danger' else 'b-warn' if e.level == 'warn' else 'b-info' }}">alert</span>
+          {{ e.message }}{% if e.resolved_at %} <span class="muted">· resolved {{ e.resolved_at[11:19] }}</span>{% endif %}{% endif %}
+      </span></div>
+    {% else %}<div class="muted" style="padding:14px 18px">Nothing yet.</div>{% endfor %}
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+{% if d.track %}
+<script src="{{ url_for('static', filename='vendor/leaflet/leaflet.js') }}"></script>
+<script>window.TRIP = {{ {'track': d.track, 'fence': fence} | tojson }};</script>
+<script src="{{ url_for('static', filename='js/trip_map.js') }}?v=1"></script>
+{% endif %}
+{% endblock %}

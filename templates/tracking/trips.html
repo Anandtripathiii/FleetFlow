@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon %}
+{% block title %}Trip history{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><div class="crumb"><a href="{{ url_for('tracking.live') }}">Live tracking</a> /</div><h1>Trip history</h1>
+  <p>Every tracked delivery, newest first. Open one to see its timeline and GPS track.</p></div>
+  <div class="actions">
+    <a class="btn {{ 'primary' if not status }}" href="{{ url_for('tracking.trips') }}">All</a>
+    {% for k, (l, _) in labels.items() %}<a class="btn {{ 'primary' if status == k }}" href="{{ url_for('tracking.trips', status=k) }}">{{ l }}</a>{% endfor %}
+  </div>
+</div>
+<div class="card">
+  <div class="table-wrap"><table>
+    <thead><tr><th>Trip</th><th>Transfer</th><th>Driver</th><th>Vehicle</th><th>To</th><th>Started</th><th>Status</th><th class="num">Alerts open</th></tr></thead>
+    <tbody>
+    {% for r in rows %}
+      <tr><td><a href="{{ url_for('tracking.trip', tid=r.id) }}"><b>{{ r.code }}</b></a></td>
+        <td><a href="{{ url_for('transfers.detail', tid=r.transfer_id) }}">{{ r.transfer_code }}</a></td>
+        <td>{{ r.driver_name }}</td><td>{{ r.vehicle_code or '–' }}</td><td>{{ r.to_name }}</td>
+        <td>{{ r.started_at|when }}</td>
+        <td><span class="badge {{ labels[r.status][1] }}">{{ labels[r.status][0] }}</span></td>
+        <td class="num">{{ r.open_alerts or '–' }}</td></tr>
+    {% else %}
+      <tr><td colspan="8"><div class="empty">{{ icon('truck') }}<div>No trips yet.</div></div></td></tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+</div>
+{% endblock %}
