@@ -8,13 +8,38 @@ from flask_login import current_user
 
 from core.arbiter import Arbiter, DecisionLog
 from core.authz import role_required
-from core.db import get_db, log_activity, now
+from core.db import connect, get_db, log_activity, now
 from core.ops import twin_advice, zone_pressure
 from core.policy import get_policy
 from core.sim import N_ROBOTS, SCENARIOS, ZONE_NAMES, ZONES, make_plan, run_episode
 
 bp = Blueprint("fleet", __name__, url_prefix="/fleet")
 STATUS_LABEL = {"idle": "Idle", "busy": "Picking", "charging": "Charging", "maintenance": "In maintenance"}
+_twin_busy = threading.Lock()
+
+
+def _twin_bg():
+    try:
+        con = connect()
+        twin_advice(con, get_policy()[0])
+        con.close()
+    finally:
+        _twin_busy.release()
+
+
+def _kick_twin():
+    """Plan the current floor in a background thread (one at a time); the result lands in ops._TWIN_CACHE."""
+    if _twin_busy.acquire(blocking=False):
+        threading.Thread(target=_twin_bg, daemon=True).start()
+
+
+def _advice(con):
+    """(pressure, moves, forecast) from the cached plan for this floor state, or forecast None while it is computed."""
+    res = twin_advice(con, get_policy()[0], cached_only=True)
+    if res is None:
+        _kick_twin()
+        return zone_pressure(con), [], None
+    return res
 
 
 @bp.route("/")
@@ -23,12 +48,22 @@ def index():
     robots = con.execute("""SELECT r.*, z.code AS zone, h.code AS home,
                             (SELECT code FROM transfers WHERE robot_id=r.id AND status='picking' ORDER BY id DESC LIMIT 1) AS job
                             FROM robots r JOIN zones z ON z.id=r.zone_id JOIN zones h ON h.id=r.home_zone_id ORDER BY r.id""").fetchall()
-    policy, kind = get_policy()
-    pr, moves, fc = twin_advice(con, policy)
+    _, kind = get_policy()
+    pr, moves, fc = _advice(con)
     history = con.execute("""SELECT m.*, r.code, u.name FROM robot_moves m JOIN robots r ON r.id=m.robot_id
                              LEFT JOIN users u ON u.id=m.user_id ORDER BY m.id DESC LIMIT 10""").fetchall()
     return render_template("fleet/index.html", robots=robots, pr=pr, moves=moves, kind=kind, history=history,
                            labels=STATUS_LABEL, zones=ZONES, fc=fc)
+
+
+@bp.route("/api/advice")
+def api_advice():
+    """The AI advice card as HTML once the twin has planned the current floor; {"html": null} while it works."""
+    con = get_db()
+    _, moves, fc = _advice(con)
+    if fc is None:
+        return jsonify({"html": None})
+    return jsonify({"html": render_template("fleet/_advice.html", moves=moves, fc=fc, kind=get_policy()[1], zones=ZONES)})
 
 
 @bp.route("/apply", methods=["POST"])

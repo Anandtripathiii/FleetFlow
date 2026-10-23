@@ -1,0 +1,31 @@
+{% from "_macros.html" import icon, zone %}
+  <form method="post" action="{{ url_for('fleet.apply') }}" class="card" id="advice">
+    <div class="card-h"><h2>{{ icon('sparkle',16) }} AI advice</h2><span class="badge b-ok plain">Twin planner + RL</span></div>
+    <div class="card-b" style="padding-bottom:6px">
+      <div class="lbl" style="margin-bottom:8px">Digital twin · next {{ fc.horizon_min }} minutes · average wait</div>
+      <div class="sim-metrics" style="grid-template-columns:repeat(3,1fr);margin:0">
+        <div><b>{{ fc.base }} s</b><span>robots stay put</span></div>
+        <div style="{{ 'background:var(--ok-bg);border-color:color-mix(in oklab,var(--ok) 35%,var(--line))' if moves }}"><b class="{{ 'win' if moves }}">{{ fc.plan }} s</b><span>with the moves below</span></div>
+        <div><b class="{{ 'win' if fc.rl is not none and fc.rl < fc.base else '' }}">{{ fc.rl if fc.rl is not none else '–' }} s</b><span>RL agent drives</span></div>
+      </div>
+      {% if moves %}<p style="margin:10px 0 0;font-size:13px"><b class="win">−{{ fc.gain }}% waiting time</b> predicted if you apply {{ 'this move' if moves|length == 1 else 'these ' ~ moves|length ~ ' moves' }}.</p>{% endif %}
+    </div>
+    {% if moves %}
+      {% for m in moves %}
+      <label class="move-card">
+        <input type="checkbox" name="move" value="{{ loop.index0 }}" checked style="margin-top:4px;accent-color:var(--accent)" {{ 'disabled' if not current_user.can('manager') }}>
+        <div><div class="move-arrow">{{ m.robot }} &nbsp;{{ zone(m['from']) }} {{ icon('arrow',16) }} {{ zone(m.to) }}<span class="muted" style="font-weight:500;font-size:12.5px">· {{ m.battery|int }}% battery</span></div>
+        <div class="muted" style="font-size:13px;margin-top:3px">{{ m.why }}</div></div>
+      </label>{% endfor %}
+      <div class="card-f actions" style="justify-content:space-between">
+        <span class="muted" style="font-size:12.5px">Every zone always keeps at least one robot.</span>
+        {% if current_user.can('manager') %}<button class="btn primary">Apply moves</button>{% else %}<span class="muted" style="font-size:12.5px">Managers can apply these.</span>{% endif %}
+      </div>
+    {% else %}
+      <div class="empty" style="padding:18px">{{ icon('check') }}<div><b style="color:var(--ink)">The fleet is balanced.</b><br>The twin found no move that cuts waiting time in the next {{ fc.horizon_min }} minutes.</div></div>
+    {% endif %}
+    <div class="card-b" style="border-top:1px solid var(--line)">
+      <p class="muted" style="font-size:12.5px;margin:0 0 6px"><span data-updated="{{ fc.updated }}">last updated just now</span> · <a href="#" data-refresh>refresh</a></p>
+      <p class="muted" style="font-size:12.5px;margin:0">How this works: we copy today's floor (robots, open pick lines, recent demand per zone, web signals) into the simulator, try every possible robot move and play the next {{ fc.horizon_min }} minutes for each, then keep the best 1–3 moves. The RL agent ({{ 'trained PPO' if kind == 'ppo' else 'heuristic' }}) is played in the same twin for comparison. Only moves that cut waiting time are suggested. Expected demand now: {% for z in zones %}{{ z }} {{ fc.rates[loop.index0] }}/min{{ ', ' if not loop.last }}{% endfor %}. Add a <a href="{{ url_for('signals.index') }}">demand signal</a> and watch the advice change.</p>
+    </div>
+  </form>
