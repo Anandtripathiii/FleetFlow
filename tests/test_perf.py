@@ -35,3 +35,36 @@ def test_twin_plan_cache_gives_same_answer(tapp):
     fresh = ops.twin_advice(con, pol)
     assert ops.twin_advice(con, pol) == fresh and len(ops._TWIN_CACHE) == 1
     con.close()
+
+
+def _until(fn, tries=300):
+    import time
+    for _ in range(tries):
+        v = fn()
+        if v:
+            return v
+        time.sleep(0.1)
+
+
+def test_fleet_page_renders_before_twin_then_advice_swaps_in(tapp):
+    from core import ops
+    ops._TWIN_CACHE.clear()
+    c = login(tapp, MANAGER)
+    assert b"Calculating advice" in c.get("/fleet/").data
+    html = _until(lambda: c.get("/fleet/api/advice").get_json()["html"])
+    assert html and "AI advice" in html and "data-updated" in html
+    page = c.get("/fleet/").data
+    assert b"Calculating advice" not in page and b"last updated" in page
+
+
+def test_lab_partial_stream_matches_full_run(tapp):
+    c = login(tapp, MANAGER)
+    url = "/fleet/api/sim?scenario=normal&seed=7&partial=1"
+    j = _until(lambda: (lambda r: None if r.get("pending") else r)(c.get(url).get_json()))
+    assert not j["done"] and len(j["rules"]["history"]) == 150          # rules + RL arrive complete at once
+    hist = j["arbiter"]["history"]
+    while not j["done"]:
+        j = c.get(f"{url}&since={len(hist)}").get_json()
+        hist += j.get("arbiter_history", [])
+    assert hist == j["arbiter"]["history"][:len(hist)] and "metrics" in j["arbiter"]
+    assert c.get(url).get_json()["done"]                                 # second time: straight from cache
