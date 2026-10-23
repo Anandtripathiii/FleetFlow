@@ -1,5 +1,6 @@
 """Run the trained PPO policy with numpy only (no torch needed in the web app)."""
 import os
+from functools import lru_cache
 
 import numpy as np
 
@@ -30,7 +31,8 @@ class NumpyPolicy:
         return int(np.argmax(self.logits(np.asarray(obs, dtype=np.float32))))
 
 
+@lru_cache(maxsize=1)
 def get_policy():
-    """Trained agent if weights exist, otherwise the simple heuristic."""
+    """Trained agent if weights exist, otherwise the simple heuristic. Loaded once per process."""
     p = NumpyPolicy.load()
     return (p, "ppo") if p is not None else (greedy_policy, "heuristic")
