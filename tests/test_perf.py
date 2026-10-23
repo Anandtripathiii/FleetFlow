@@ -63,6 +63,7 @@ def test_lab_partial_stream_matches_full_run(tapp):
     j = _until(lambda: (lambda r: None if r.get("pending") else r)(c.get(url).get_json()))
     assert not j["done"] and len(j["rules"]["history"]) == 150          # rules + RL arrive complete at once
     hist = j["arbiter"]["history"]
+    assert "arbiter_history" in c.get(f"{url}&since=0").get_json()        # an empty first piece still streams
     while not j["done"]:
         j = c.get(f"{url}&since={len(hist)}").get_json()
         hist += j.get("arbiter_history", [])

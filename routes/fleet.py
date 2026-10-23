@@ -237,7 +237,7 @@ def api_sim():
                 since = max(0, int(request.args.get("since", 0)))
             except ValueError:
                 since = 0
-            if since:
+            if "since" in request.args:
                 return jsonify({"done": False, "arbiter_history": h[since:]})
             return jsonify({**live, "arbiter": {"history": h, "decisions": []}, "done": False})
         if key in _live:
