@@ -88,8 +88,12 @@
 
   const fmt = s => String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
 
+  // frames playable now: the arbiter lane arrives in pieces while the server is still computing it
+  const avail = () => data.done ? data.rules.history.length : data.arbiter.history.length;
+
   function render() {
-    if (!data) return;
+    if (!data || !avail()) return;
+    frame = Math.min(frame, avail() - 1);
     const a = data.rules.history[frame], b = data.rl.history[frame], c = data.arbiter.history[frame];
     draw('rules', a, data.zones, data.zone_names);
     draw('rl', b, data.zones, data.zone_names);
@@ -103,7 +107,7 @@
       $(side + '-moves').textContent = s.moves + ' moves';
     }
     $('scrub').value = frame;
-    const done = frame >= data.rules.history.length - 1;
+    const done = data.done && frame >= data.rules.history.length - 1;
     if (done) finish();
   }
 
@@ -152,7 +156,8 @@
     const L = data.rl.log;
     $('log').innerHTML = L.length ? L.map(l => `<div><b>${fmt(l.t)}</b><span><b style="color:var(--ink)">${l.robot}</b> ${l.to === '-' ? '' : l.from + ' → ' + l.to}<br><span class="muted">${l.why}</span></span></div>`).join('')
       : '<div class="muted">The agent kept every robot where it was.</div>';
-    decisionLog('arb', data.arbiter.decisions);
+    if (data.done) decisionLog('arb', data.arbiter.decisions);
+    else $('arb-log').innerHTML = '<div class="muted">The arbiter is still deciding…</div>';
     decisionLog('rules', data.rules_decisions, 'rules-dlog');
     decisionLog('rl', data.rl_decisions, 'rl-dlog');
   }
@@ -169,17 +174,30 @@
     if (!playing) return;
     const dt = ts - last; last = ts;
     acc += dt * (+$('speed').value) / 400;
-    while (acc >= 1 && frame < data.rules.history.length - 1) { frame++; acc -= 1; }
+    while (acc >= 1 && frame < avail() - 1) { frame++; acc -= 1; }
+    if (frame >= avail() - 1) acc = 0;                      // waiting for the next piece: hold, don't jump ahead
     render();
-    if (frame >= data.rules.history.length - 1) { playing = false; $('play').textContent = 'Replay'; return; }
+    if (data.done && frame >= data.rules.history.length - 1) { playing = false; $('play').textContent = 'Replay'; return; }
     requestAnimationFrame(tick);
+  }
+
+  const simUrl = () => `${window.SIM_API}?scenario=${$('sc').value}&seed=${$('seed').value || 1}&partial=1`;
+  const wait = ms => new Promise(r => setTimeout(r, ms));
+  const getJson = async url => (await fetch(url)).json();
+
+  function progress() {
+    const bar = $('sim-progress');
+    bar.hidden = data.done;
+    bar.firstElementChild.style.width = (100 * data.arbiter.history.length / data.rules.history.length) + '%';
   }
 
   async function run() {
     $('run').disabled = true; $('run').textContent = 'Running…';
     try {
-      const r = await fetch(`${window.SIM_API}?scenario=${$('sc').value}&seed=${$('seed').value || 1}`);
-      data = await r.json();
+      const url = simUrl();
+      let j = await getJson(url);
+      while (j.pending) { await wait(200); j = await getJson(url); }
+      data = j;
       frame = 0; acc = 0; prevZone.rules = []; prevZone.rl = []; prevZone.arbiter = [];
       ['p90', 'idle'].forEach(k => ['rules', 'rl', 'arbiter'].forEach(side => { $(side + '-' + k).textContent = '–'; }));
       $('verdict-card').hidden = true;
@@ -187,6 +205,14 @@
       buildChart(); showLog();
       playing = true; $('play').disabled = false; $('play').textContent = 'Pause';
       last = performance.now(); requestAnimationFrame(tick);
+      progress();
+      while (!data.done) {
+        await wait(400);
+        j = await getJson(url + '&since=' + data.arbiter.history.length);
+        if (j.done) { data = j; buildChart(); showLog(); }
+        else if (j.arbiter_history) data.arbiter.history.push(...j.arbiter_history);
+        progress();
+      }
     } finally { $('run').disabled = false; $('run').innerHTML = 'Run all'; }
   }
 
@@ -198,6 +224,8 @@
     playing = !playing; $('play').textContent = playing ? 'Pause' : 'Play';
     if (playing) { last = performance.now(); requestAnimationFrame(tick); }
   };
+  // warm the server cache for the next run while the user is still choosing
+  $('sc').onchange = $('seed').onchange = () => fetch(simUrl() + '&prefetch=1');
   $('scrub').oninput = e => { if (!data) return; frame = +e.target.value; playing = false; $('play').textContent = 'Play'; render(); };
   Chart.defaults.font.family = 'Figtree, system-ui, sans-serif';
   onTheme(() => { palette(); Chart.defaults.color = P.muted; if (data) { buildChart(); render(); } });

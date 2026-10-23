@@ -1,6 +1,7 @@
 import json
 import os
 import threading
+import time
 from functools import lru_cache
 
 from flask import Blueprint, flash, jsonify, redirect, render_template, request, url_for
@@ -157,13 +158,40 @@ def _run(scenario, seed):
     a = run_episode(plan, seed, ra)
     b = run_episode(plan, seed, rb)
     arb = Arbiter(policy)
-    c = run_episode(plan, seed, arb)
-    return {"scenario": scenario, "seed": seed, "kind": kind, "length": plan.length, "robots": N_ROBOTS, "zones": ZONES,
-            "zone_names": ZONE_NAMES,
-            "rules": {"metrics": a.metrics(), "history": a.history, "log": a.log},
-            "rl": {"metrics": b.metrics(), "history": b.history, "log": b.log},
-            "arbiter": {"metrics": c.metrics(), "history": c.history, "decisions": arb.decisions, "counts": arb.counts()},
-            "rules_decisions": ra.decisions, "rl_decisions": rb.decisions}
+    out = {"scenario": scenario, "seed": seed, "kind": kind, "length": plan.length, "robots": N_ROBOTS, "zones": ZONES,
+           "zone_names": ZONE_NAMES,
+           "rules": {"metrics": a.metrics(), "history": a.history, "log": a.log},
+           "rl": {"metrics": b.metrics(), "history": b.history, "log": b.log},
+           "arbiter": {"history": [], "decisions": []},
+           "rules_decisions": ra.decisions, "rl_decisions": rb.decisions}
+
+    def watch(obs, sim):            # same action as arb; only exposes the growing arbiter lane to ?partial=1
+        out["arbiter"]["history"] = sim.history
+        return arb(obs, sim)
+    if (scenario, seed) in _live:   # a background run started by _start: publish progress while the arbiter plays
+        _live[(scenario, seed)] = out
+    c = run_episode(plan, seed, watch)
+    return {**out, "arbiter": {"metrics": c.metrics(), "history": c.history, "decisions": arb.decisions, "counts": arb.counts()}}
+
+
+_live = {}                          # (scenario, seed) -> payload so far while a background _run computes it
+_live_lock = threading.Lock()
+
+
+def _bg(scenario, seed):
+    try:
+        _run(scenario, seed)
+    finally:
+        _live.pop((scenario, seed), None)     # after _run returned, so the lru cache already holds the result
+
+
+def _start(scenario, seed):
+    """Compute (or fetch from cache) one Lab run in a background thread, once per key at a time."""
+    with _live_lock:
+        if (scenario, seed) in _live:
+            return
+        _live[(scenario, seed)] = None
+    threading.Thread(target=_bg, args=(scenario, seed), daemon=True).start()
 
 
 _warmed = threading.Event()
@@ -171,11 +199,12 @@ _warmed = threading.Event()
 
 @bp.before_app_request
 def warm_lab():
-    """The first request in each worker computes the Lab's default run (spike, seed 1) in the background,
-    so the Simulation Lab opens without a ~5 s wait. Results are deterministic, so the cache never goes stale."""
+    """The first request in each worker computes the Lab's default run (spike, seed 1) and the Fleet page's
+    twin plan in the background. Lab results are deterministic, so the cache never goes stale."""
     if not _warmed.is_set() and os.environ.get("LAB_WARMUP") != "0":
         _warmed.set()
-        threading.Thread(target=_run, args=("spike", 1), daemon=True).start()
+        _kick_twin()
+        _start("spike", 1)
 
 
 @bp.route("/api/sim")
@@ -187,7 +216,29 @@ def api_sim():
         seed = max(0, min(9999, int(request.args.get("seed", 1))))
     except ValueError:
         seed = 1
-    return jsonify(_run(sc, seed))
+    if request.args.get("partial"):
+        # rules + RL lanes come back at once; the slow arbiter lane is fetched in pieces with ?since=<frames held>
+        key = (sc, seed)
+        _start(sc, seed)
+        if request.args.get("prefetch"):
+            return jsonify({"ok": True})
+        for _ in range(25):                    # rules + RL take ~0.1 s; a finished or cached run frees the key
+            live = _live.get(key)
+            if live is not None or key not in _live:
+                break
+            time.sleep(0.02)
+        if live is not None:
+            h = live["arbiter"]["history"][:]
+            try:
+                since = max(0, int(request.args.get("since", 0)))
+            except ValueError:
+                since = 0
+            if since:
+                return jsonify({"done": False, "arbiter_history": h[since:]})
+            return jsonify({**live, "arbiter": {"history": h, "decisions": []}, "done": False})
+        if key in _live:
+            return jsonify({"done": False, "pending": True})
+    return jsonify({**_run(sc, seed), "done": True})
 
 
 @bp.route("/api/pressure")
