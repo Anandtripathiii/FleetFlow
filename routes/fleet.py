@@ -199,12 +199,16 @@ _warmed = threading.Event()
 
 @bp.before_app_request
 def warm_lab():
-    """The first request in each worker computes the Lab's default run (spike, seed 1) and the Fleet page's
-    twin plan in the background. Lab results are deterministic, so the cache never goes stale."""
+    """Each worker computes the Lab's default run (spike, seed 1) and the Fleet page's twin plan in the
+    background, at fork or on its first request. Lab results are deterministic, so the cache never goes stale."""
     if not _warmed.is_set() and os.environ.get("LAB_WARMUP") != "0":
         _warmed.set()
         _kick_twin()
         _start("spike", 1)
+
+
+if hasattr(os, "register_at_fork"):   # gunicorn --preload forks workers from the loaded app: warm each at birth
+    os.register_at_fork(after_in_child=warm_lab)
 
 
 @bp.route("/api/sim")
