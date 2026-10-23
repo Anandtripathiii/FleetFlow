@@ -7,8 +7,7 @@ import numpy as np
 from .db import log_activity, now
 from .sim import MOVES, N_ROBOTS, ZONES
 
-TWIN_TTL_S = 60          # Fleet page: reuse the twin plan for the same floor state for up to 60 s
-_TWIN_CACHE = {}
+_TWIN_CACHE = {}         # floor state -> twin plan; the plan is deterministic for a state, so it never expires
 
 
 class OpError(Exception):
@@ -314,12 +313,13 @@ def _rollout(plan, seed, init, rates, sig, moves=(), policy=None):
     return sim
 
 
-def twin_advice(con, policy, horizon=900, seeds=(11, 12, 13), max_moves=3):
+def twin_advice(con, policy, horizon=900, seeds=(11, 12, 13), max_moves=3, cached_only=False):
     """Digital twin + planning.
     1. Copy today's floor (robots, open pick lines, recent demand, web signals) into the simulator.
     2. Try every single robot move, play the next 15 minutes for each, keep the best; repeat up to 3 moves.
     3. Also let the RL agent drive the same 15 minutes, so both can be compared.
-    Only moves that cut predicted waiting time are suggested."""
+    Only moves that cut predicted waiting time are suggested.
+    cached_only=True returns None instead of planning when this floor state has no plan yet."""
     from .sim import BASE_RATE, MOVES, SERVICE_S, Plan
     pr = zone_pressure(con)
     zi = {z: i for i, z in enumerate(ZONES)}
@@ -343,9 +343,11 @@ def twin_advice(con, policy, horizon=900, seeds=(11, 12, 13), max_moves=3):
     # the plan only depends on these inputs (seeds are fixed), so the same floor state gives the same answer
     key = (repr(init), rates.round(6).tobytes(), sig.tobytes(), horizon, tuple(seeds), max_moves, type(policy).__name__)
     hit = _TWIN_CACHE.get(key)
-    if hit and time.monotonic() - hit[0] < TWIN_TTL_S:
+    if hit:
         base, chosen, best, rl = hit[1]
         chosen = list(chosen)
+    elif cached_only:
+        return None
     else:
         base = score()
         chosen, best = [], base
@@ -365,7 +367,7 @@ def twin_advice(con, policy, horizon=900, seeds=(11, 12, 13), max_moves=3):
         rl = score(pol=policy) if policy is not None else None
         if len(_TWIN_CACHE) > 32:
             _TWIN_CACHE.clear()
-        _TWIN_CACHE[key] = (time.monotonic(), (base, tuple(chosen), best, rl))
+        _TWIN_CACHE[key] = hit = (time.time(), (base, tuple(chosen), best, rl))
 
     per_robot = 60.0 / SERVICE_S                                   # orders/min one robot can handle
     rob_now = list(count)
@@ -386,7 +388,7 @@ def twin_advice(con, policy, horizon=900, seeds=(11, 12, 13), max_moves=3):
                       "battery": row["battery"], "why": why})
     forecast = {"base": round(base), "plan": round(best), "rl": round(rl) if rl is not None else None,
                 "gain": round(100 * (1 - best / max(base, 1e-6))), "rl_gain": round(100 * (1 - rl / max(base, 1e-6))) if rl is not None else None,
-                "rates": [round(float(x), 1) for x in rates], "horizon_min": horizon // 60}
+                "rates": [round(float(x), 1) for x in rates], "horizon_min": horizon // 60, "updated": hit[0]}
     return pr, moves, forecast
 
 
